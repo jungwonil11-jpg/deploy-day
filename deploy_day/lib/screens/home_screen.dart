@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
 import '../desktop_shell.dart';
+import '../memo/memo_store.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/backlog_tab.dart';
 import '../widgets/changelog_tab.dart';
+import '../widgets/memo_tab.dart';
 import '../widgets/sprint_tab.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -76,7 +78,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         switch (tab) {
                           0 => SprintTab(confetti: _confetti),
                           1 => const BacklogTab(),
-                          _ => const ChangelogTab(),
+                          2 => const ChangelogTab(),
+                          _ => const MemoTab(),
                         },
                         _tools(),
                       ],
@@ -268,12 +271,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog).
+  /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog /memo).
   Widget _tabs(AppState s) {
     final items = [
       ('/sprint', s.todos.length),
       ('/backlog', s.backlog.length),
       ('/changelog', s.releases.length),
+      // 포스트잇은 데스크탑 전용
+      if (isDesktopShell) ('/memo', ref.watch(memoProvider).length),
     ];
     return Row(
       children: [

@@ -2,9 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'memo/memo_store.dart';
 
 /// 데스크탑 셸(트레이/자동시작/항상위) 활성 여부 — Windows 데스크탑 전용.
 /// Android/Web 빌드에선 전부 no-op으로 빠짐.
@@ -66,6 +69,7 @@ Future<void> quitApp() async {
 Future<void> _rebuildTrayMenu() async {
   await trayManager.setContextMenu(Menu(items: [
     MenuItem(key: 'show', label: '열기'),
+    MenuItem(key: 'new_memo', label: '새 메모'),
     MenuItem.separator(),
     MenuItem.checkbox(key: 'pin', label: '항상 위에 고정', checked: pinned.value),
     MenuItem.checkbox(
@@ -76,15 +80,15 @@ Future<void> _rebuildTrayMenu() async {
 }
 
 /// 트레이/창 이벤트 리스너 호스트 — 앱 최상단에 한 번 감싸면 끝.
-class DesktopShellHost extends StatefulWidget {
+class DesktopShellHost extends ConsumerStatefulWidget {
   final Widget child;
   const DesktopShellHost({required this.child, super.key});
 
   @override
-  State<DesktopShellHost> createState() => _DesktopShellHostState();
+  ConsumerState<DesktopShellHost> createState() => _DesktopShellHostState();
 }
 
-class _DesktopShellHostState extends State<DesktopShellHost>
+class _DesktopShellHostState extends ConsumerState<DesktopShellHost>
     with WindowListener, TrayListener {
   @override
   void initState() {
@@ -93,6 +97,8 @@ class _DesktopShellHostState extends State<DesktopShellHost>
       windowManager.addListener(this);
       trayManager.addListener(this);
       _initTray();
+      // 메모 메시지 핸들러 등록 + 열려 있던 포스트잇 복원
+      ref.read(memoProvider.notifier).initDesktop();
     }
   }
 
@@ -131,6 +137,8 @@ class _DesktopShellHostState extends State<DesktopShellHost>
     switch (menuItem.key) {
       case 'show':
         await _showWindow();
+      case 'new_memo':
+        await ref.read(memoProvider.notifier).newMemo();
       case 'pin':
         await togglePin();
       case 'autostart':
