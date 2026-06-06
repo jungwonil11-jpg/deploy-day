@@ -1,0 +1,7 @@
+# 루트의 개인 화면 캡처 — 공개 금지 (앱 안 아이콘 png는 영향 없음)
+/screenshot.png
+/*.png
+
+# OS
+Thumbs.db
+Desktop.ini
