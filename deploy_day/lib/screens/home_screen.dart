@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
+import '../desktop_shell.dart';
 import '../models.dart';
 import '../theme.dart';
 import '../widgets/backlog_tab.dart';
@@ -138,6 +139,21 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text('\$ deploy --every thursday', style: mono()),
                 const Spacer(),
                 Text('● LIVE', style: mono(color: C.ship, spacing: .5)),
+                if (isDesktopShell) ...[
+                  const SizedBox(width: 12),
+                  // 항상 위 고정 토글
+                  ValueListenableBuilder<bool>(
+                    valueListenable: pinned,
+                    builder: (_, on, _) => GestureDetector(
+                      onTap: togglePin,
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: Text('[pin${on ? ' ●' : ''}]',
+                            style: mono(color: on ? C.accent : C.dimmer)),
+                      ),
+                    ),
+                  ),
+                ],
               ]),
             ]),
           ),
