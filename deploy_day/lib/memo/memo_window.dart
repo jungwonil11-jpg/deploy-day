@@ -160,7 +160,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     });
   }
 
-  static const double _snapDist = 30; // 스냅 작동 거리(px)
+  static const double _snapDist = 40; // 스냅 작동 거리(px)
 
   /// 자석 스냅 — 화면 작업영역 가장자리(A) + 이웃 메모 모서리(B)에 붙임.
   /// 가장 가까운 후보 하나로 x/y 각각 끌어당김. 후보 없으면 null.
