@@ -34,6 +34,9 @@ class Persona {
   final String shipGrad; // {names} {ver}
   final String shipDialogSub; // 배포 모달 부제
 
+  /// 인터랙티브 튜토리얼 6단계 문구 (tutorial.dart의 kTutSteps와 1:1).
+  final List<String> tutorial;
+
   const Persona({
     required this.id,
     required this.name,
@@ -56,6 +59,7 @@ class Persona {
     required this.shipDone,
     required this.shipGrad,
     required this.shipDialogSub,
+    required this.tutorial,
   });
 }
 
@@ -83,6 +87,14 @@ const kPersonas = [
     shipDone: '🚀 {ver} 배포 완료!',
     shipGrad: '🎉 {names} 졸업 · {ver} 배포!',
     shipDialogSub: '완료한 건 릴리즈노트로 박제 · 못한 건 다음 스프린트로 롤백',
+    tutorial: [
+      '프로젝트부터 하나 파셈.\n[+ 프로젝트] 눌러서 이름 박으면 됨 (예: 운동, 자격증)',
+      '이제 이번 주에 할 거 하나 적고 Enter.\n이게 커밋임 — 작을수록 좋음',
+      '했으면 ☐ 눌러서 체크.\n완료된 건 밑으로 가라앉음',
+      '이게 ship 버튼임.\n배포 요일 되면 켜지고, 누르면 한 주가 릴리즈로 박제됨.\n못한 건 자동으로 다음 주 롤백',
+      '탭 구경.\n/backlog 는 나중에 할 거 보관함, /changelog 는 릴리즈 역사,\n/config 는 설정 — 말투도 거기서 바꿈',
+      '끝. 매주 하나라도 ship 하면 streak 쌓임.\n빈손 배포면 0으로 리셋되니까 알아서 잘 ㄱㄱ',
+    ],
   ),
   // 따뜻한 응원
   Persona(
@@ -107,6 +119,14 @@ const kPersonas = [
     shipDone: '🚀 {ver} 배포 완료! 수고했어요',
     shipGrad: '🎉 {names} 졸업! {ver} 배포 완료, 축하해요',
     shipDialogSub: '완료한 일은 릴리즈노트에 남고, 못한 일은 다음 주로 넘어가요',
+    tutorial: [
+      '먼저 프로젝트를 만들어볼까요?\n[+ 프로젝트]를 눌러 이름을 지어주세요 (예: 운동, 자격증)',
+      '이번 주에 할 일을 하나 적고 Enter!\n이게 커밋이에요 — 작을수록 좋아요',
+      '끝낸 일은 ☐ 를 눌러 체크해요.\n완료한 일은 아래로 내려가요',
+      '여기가 ship 버튼이에요.\n배포 요일이 되면 켜지고, 누르면 한 주가 릴리즈로 남아요.\n못한 일은 다음 주로 넘어가니 걱정 마세요',
+      '탭을 둘러볼까요?\n/backlog 는 나중에 할 일 보관함, /changelog 는 나의 릴리즈 역사,\n/config 에서 말투도 바꿀 수 있어요',
+      '준비 끝! 매주 하나라도 ship 하면 streak이 쌓여요.\n이번 주도 화이팅!',
+    ],
   ),
   // 차분 정중
   Persona(
@@ -131,6 +151,14 @@ const kPersonas = [
     shipDone: '🚀 {ver} 배포가 완료되었습니다',
     shipGrad: '🎉 {names} 졸업 · {ver} 배포가 완료되었습니다',
     shipDialogSub: '완료 항목은 릴리즈노트에 기록되고, 미완료 항목은 다음 스프린트로 이월됩니다',
+    tutorial: [
+      '먼저 프로젝트를 등록합니다.\n[+ 프로젝트]를 눌러 이름을 입력하세요 (예: 운동, 자격증)',
+      '이번 주에 할 작업을 입력하고 Enter를 누릅니다.\n이것이 커밋입니다 — 작은 단위를 권장합니다',
+      '완료한 작업은 ☐ 를 눌러 체크합니다.\n완료 항목은 아래로 정렬됩니다',
+      'ship 버튼입니다.\n배포 요일에 활성화되며, 누르면 한 주가 릴리즈로 기록됩니다.\n미완료 작업은 다음 주로 이월됩니다',
+      '탭 안내입니다.\n/backlog 는 대기 작업 보관함, /changelog 는 릴리즈 이력,\n/config 는 설정입니다',
+      '안내를 마칩니다. 매주 한 건 이상 완료 후 배포하면 streak이 누적됩니다.',
+    ],
   ),
 ];
 

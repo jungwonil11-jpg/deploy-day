@@ -21,6 +21,16 @@ class ActiveProjectNotifier extends Notifier<String> {
   void set(String v) => state = v;
 }
 
+/// 현재 탭 인덱스 — 튜토리얼·/config 등 다른 곳에서도 전환할 수 있게 provider로.
+final tabProvider = NotifierProvider<TabNotifier, int>(TabNotifier.new);
+
+class TabNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void set(int v) => state = v;
+}
+
 /// 앱 전체 상태 + 비즈니스 로직 — Service 계층 격.
 final appProvider = NotifierProvider<AppNotifier, AppState>(AppNotifier.new);
 

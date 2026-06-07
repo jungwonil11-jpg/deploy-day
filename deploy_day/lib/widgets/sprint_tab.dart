@@ -6,6 +6,7 @@ import '../app_state.dart';
 import '../models.dart';
 import '../persona.dart';
 import '../theme.dart';
+import '../tutorial.dart';
 import 'ship_dialog.dart';
 
 class SprintTab extends ConsumerStatefulWidget {
@@ -43,18 +44,21 @@ class _SprintTabState extends ConsumerState<SprintTab> {
       CliBox(
         title: 'sprint · 다음 배포까지 쌓을 커밋',
         child: Column(children: [
-          addRow(
-            controller: _input,
-            focusNode: _focus,
-            hint: '[$target] 할 거 입력 (Enter)',
-            button: 'commit',
-            onAdd: _add,
+          KeyedSubtree(
+            key: tutKeyAddRow,
+            child: addRow(
+              controller: _input,
+              focusNode: _focus,
+              hint: '[$target] 할 거 입력 (Enter)',
+              button: 'commit',
+              onAdd: _add,
+            ),
           ),
           ..._todoRows(s, active),
         ]),
       ),
       const SizedBox(height: 18),
-      _shipBar(s),
+      KeyedSubtree(key: tutKeyShip, child: _shipBar(s)),
     ]);
   }
 
@@ -107,7 +111,10 @@ class _SprintTabState extends ConsumerState<SprintTab> {
             on: active == p.id,
             onTap: () =>
                 active == p.id ? _projectSettings(p) : setActive(p.id)),
-      chip(label: '+ 프로젝트', on: false, dashed: true, onTap: _addProject),
+      KeyedSubtree(
+          key: tutKeyAddProject,
+          child: chip(
+              label: '+ 프로젝트', on: false, dashed: true, onTap: _addProject)),
     ]);
   }
 
@@ -203,6 +210,14 @@ class _SprintTabState extends ConsumerState<SprintTab> {
       return [emptyBox(personaOf(s).emptySprint)];
     }
     final rows = <Widget>[];
+    var keyed = false; // 첫 투두 행에만 튜토리얼 타겟 키
+    Widget item(AppState s, Todo t) {
+      final w = _todoItem(s, t);
+      if (keyed) return w;
+      keyed = true;
+      return KeyedSubtree(key: tutKeyFirstTodo, child: w);
+    }
+
     if (active == 'all') {
       for (final pid in s.projOrder()) {
         final its = s.todos.where((t) => t.project == pid).toList();
@@ -218,12 +233,12 @@ class _SprintTabState extends ConsumerState<SprintTab> {
                 style: mono(size: 11, color: C.dimmer)),
           ]),
         ));
-        rows.addAll(_sink(its).map((t) => _todoItem(s, t)));
+        rows.addAll(_sink(its).map((t) => item(s, t)));
       }
     } else {
       final its = s.todos.where((t) => t.project == active).toList();
       if (its.isEmpty) return [emptyBox('이 프로젝트엔 커밋 없음')];
-      rows.addAll(_sink(its).map((t) => _todoItem(s, t)));
+      rows.addAll(_sink(its).map((t) => item(s, t)));
     }
     return rows;
   }

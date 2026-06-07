@@ -7,6 +7,7 @@ import '../memo/memo_store.dart';
 import '../models.dart';
 import '../persona.dart';
 import '../theme.dart';
+import '../tutorial.dart';
 
 /// /config 탭 — 페르소나·앱 소개·정책 문서.
 class ConfigTab extends ConsumerWidget {
@@ -36,9 +37,34 @@ class ConfigTab extends ConsumerWidget {
       ),
       const SizedBox(height: 16),
       // ----- 사용법 -----
-      const CliBox(
+      CliBox(
         title: 'manual · 사용법',
-        child: _LegalTile(title: '처음 왔으면 읽기 — 5분 사용법', body: kManual, first: true),
+        child: Column(children: [
+          const _LegalTile(
+              title: '처음 왔으면 읽기 — 5분 사용법', body: kManual, first: true),
+          // 인터랙티브 튜토리얼 재실행
+          GestureDetector(
+            onTap: () => ref.read(tutorialProvider.notifier).start(),
+            behavior: HitTestBehavior.opaque,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+                decoration: BoxDecoration(
+                    border: Border(top: BorderSide(color: C.line))),
+                child: Row(children: [
+                  Text('▶', style: mono(size: 12, color: C.accent)),
+                  const SizedBox(width: 10),
+                  Text('인터랙티브 튜토리얼 시작',
+                      style: kr(size: 14, weight: FontWeight.w500)),
+                  const Spacer(),
+                  Text('따라하면서 배우기', style: mono(size: 11, color: C.dimmer)),
+                ]),
+              ),
+            ),
+          ),
+        ]),
       ),
       const SizedBox(height: 16),
       // ----- 앱 소개 -----

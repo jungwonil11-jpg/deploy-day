@@ -11,6 +11,7 @@ import '../memo/memo_store.dart';
 import '../models.dart';
 import '../persona.dart';
 import '../theme.dart';
+import '../tutorial.dart';
 import '../widgets/backlog_tab.dart';
 import '../widgets/changelog_tab.dart';
 import '../widgets/config_tab.dart';
@@ -25,7 +26,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  int tab = 0;
   late final ConfettiController _confetti =
       ConfettiController(duration: const Duration(milliseconds: 1700));
   Timer? _midnight;
@@ -108,6 +108,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
     if (name == null) return;
     ref.read(appProvider.notifier).setName(name);
+    // 첫 실행이면 이름 받자마자 인터랙티브 튜토리얼로
+    if (first && mounted) {
+      ref.read(tutorialProvider.notifier).start();
+    }
   }
 
   /// 자정 넘어가면 D-day 표시 갱신 (HTML은 새로고침해야 갱신됐음).
@@ -176,6 +180,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         _statusLine(s),
+        // 인터랙티브 튜토리얼 코치마크 — 꺼져 있으면 빈 위젯
+        const TutorialOverlay(),
       ]),
     );
   }
@@ -425,6 +431,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// 현재 탭 본문 — _tabs의 항목 순서와 1:1.
   Widget _tabBody() {
+    final tab = ref.watch(tabProvider);
     final bodies = <Widget>[
       SprintTab(confetti: _confetti),
       const BacklogTab(),
@@ -438,6 +445,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog /memo /config).
   Widget _tabs(AppState s) {
+    final tab = ref.watch(tabProvider);
     final items = [
       ('/sprint', '${s.todos.length}'),
       ('/backlog', '${s.backlog.length}'),
@@ -445,13 +453,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (isDesktopShell) ('/memo', '${ref.watch(memoProvider).length}'),
       ('/config', ''), // 설정엔 카운트 없음
     ];
-    return Row(
+    return KeyedSubtree(
+      key: tutKeyTabs,
+      child: Row(
       children: [
         for (var i = 0; i < items.length; i++) ...[
           if (i > 0) const SizedBox(width: 4),
           Expanded(
             child: GestureDetector(
-              onTap: () => setState(() => tab = i),
+              onTap: () => ref.read(tabProvider.notifier).set(i),
               child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8, vertical: 11),
@@ -482,6 +492,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ],
+      ),
     );
   }
 
