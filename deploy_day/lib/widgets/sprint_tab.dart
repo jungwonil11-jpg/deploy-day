@@ -98,19 +98,69 @@ class _SprintTabState extends ConsumerState<SprintTab> {
         );
 
     final setActive = ref.read(activeProjectProvider.notifier).set;
-    return Wrap(spacing: 7, runSpacing: 7, children: [
-      chip(
-          label: '전체',
-          on: active == 'all',
-          onTap: () => setActive('all')),
-      for (final p in s.projects.where((p) => !p.done))
-        chip(
-            // 활성 칩은 ✎ 힌트 — 한 번 더 누르면 설정(이름·순서)
-            label: active == p.id ? '${p.name} ✎' : p.name,
-            dot: hexColor(p.color),
-            on: active == p.id,
-            onTap: () =>
-                active == p.id ? _projectSettings(p) : setActive(p.id)),
+    final ps = s.projects.where((p) => !p.done).toList();
+    return Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+      chip(label: '전체', on: active == 'all', onTap: () => setActive('all')),
+      const SizedBox(width: 7),
+      // 프로젝트 칩 — ≡ 핸들 드래그로 순서 변경 (가로 리스트)
+      Expanded(
+        child: SizedBox(
+          height: 36,
+          child: ReorderableListView.builder(
+            scrollDirection: Axis.horizontal,
+            buildDefaultDragHandles: false,
+            proxyDecorator: (child, _, _) =>
+                Material(color: Colors.transparent, child: child),
+            itemCount: ps.length,
+            onReorderItem: (o, n) {
+              final ids = ps.map((p) => p.id).toList();
+              ids.insert(n, ids.removeAt(o));
+              ref.read(appProvider.notifier).reorderProjects(ids);
+            },
+            itemBuilder: (_, i) {
+              final p = ps[i];
+              final on = active == p.id;
+              return Padding(
+                key: ValueKey(p.id),
+                padding: const EdgeInsets.only(right: 7),
+                child: GestureDetector(
+                  // 활성 칩은 ✎ 힌트 — 한 번 더 누르면 이름 수정
+                  onTap: () => on ? _renameProject(p) : setActive(p.id),
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      decoration: BoxDecoration(
+                        color: on ? C.panel2 : C.panel,
+                        border: Border.all(color: on ? C.accent : C.line),
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                      child: Row(mainAxisSize: MainAxisSize.min, children: [
+                        ReorderableDragStartListener(
+                          index: i,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.grab,
+                            child: Padding(
+                              padding: const EdgeInsets.only(right: 7),
+                              child: Text('≡',
+                                  style: mono(size: 13, color: C.dimmer)),
+                            ),
+                          ),
+                        ),
+                        PDot(hexColor(p.color)),
+                        const SizedBox(width: 7),
+                        Text(on ? '${p.name} ✎' : p.name,
+                            style: mono(color: on ? C.txt : C.dim)),
+                      ]),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ),
+      const SizedBox(width: 7),
       KeyedSubtree(
           key: tutKeyAddProject,
           child: chip(
@@ -118,49 +168,12 @@ class _SprintTabState extends ConsumerState<SprintTab> {
     ]);
   }
 
-  /// 프로젝트 설정 — 이름 수정 + 칩 순서 이동.
-  Future<void> _projectSettings(Project p) async {
-    final ctl = TextEditingController(text: p.name);
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: C.panel,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-            side: BorderSide(color: C.border)),
-        title: Text('프로젝트 설정',
-            style: mono(size: 15, color: C.txt, weight: FontWeight.w700)),
-        content: TextField(
-          controller: ctl,
-          autofocus: true,
-          maxLength: 30,
-          style: kr(size: 14),
-          decoration: inputDeco('이름').copyWith(counterText: ''),
-          onSubmitted: (_) => Navigator.pop(ctx, 'save'),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, 'left'),
-              child: Text('← 앞으로', style: mono(size: 13, color: C.dim))),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, 'right'),
-              child: Text('뒤로 →', style: mono(size: 13, color: C.dim))),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('취소', style: mono(size: 13, color: C.dim))),
-          TextButton(
-              onPressed: () => Navigator.pop(ctx, 'save'),
-              child: Text('저장',
-                  style: mono(
-                      size: 13, color: C.accent, weight: FontWeight.w700))),
-        ],
-      ),
-    );
-    if (action == null || !mounted) return;
-    final n = ref.read(appProvider.notifier);
-    n.renameProject(p.id, ctl.text); // 이동하더라도 바꾼 이름은 살림
-    if (action == 'left') n.moveProject(p.id, -1);
-    if (action == 'right') n.moveProject(p.id, 1);
+  /// 프로젝트 이름 수정 — 순서는 칩의 ≡ 드래그로.
+  Future<void> _renameProject(Project p) async {
+    final v = await promptText(context,
+        title: '프로젝트 이름 수정', initial: p.name, hint: '이름', maxLength: 30);
+    if (v == null || !mounted) return;
+    ref.read(appProvider.notifier).renameProject(p.id, v);
   }
 
   Future<void> _addProject() async {
@@ -201,21 +214,21 @@ class _SprintTabState extends ConsumerState<SprintTab> {
 
   /* ---------- 투두 목록 ---------- */
 
-  /// 완료 항목은 그룹 안에서 밑으로 가라앉음 (표시 순서만, 저장 순서는 유지).
-  List<Todo> _sink(Iterable<Todo> its) =>
-      [...its.where((t) => !t.done), ...its.where((t) => t.done)];
-
   List<Widget> _todoRows(AppState s, String active) {
     if (s.todos.isEmpty) {
       return [emptyBox(personaOf(s).emptySprint)];
     }
     final rows = <Widget>[];
-    var keyed = false; // 첫 투두 행에만 튜토리얼 타겟 키
-    Widget item(AppState s, Todo t) {
-      final w = _todoItem(s, t);
-      if (keyed) return w;
-      keyed = true;
-      return KeyedSubtree(key: tutKeyFirstTodo, child: w);
+    var tutKeyed = false; // 첫 섹션 첫 행에만 튜토리얼 타겟 키
+
+    // 미완료/완료 섹션 분리 — 드래그는 같은 섹션 안에서만 (섞이면 헷갈림)
+    void addSections(String? pid, List<Todo> its) {
+      for (final done in [false, true]) {
+        final sec = its.where((t) => t.done == done).toList();
+        if (sec.isEmpty) continue;
+        rows.add(_section(s, pid, sec, done, tutTarget: !tutKeyed));
+        tutKeyed = true;
+      }
     }
 
     if (active == 'all') {
@@ -233,19 +246,42 @@ class _SprintTabState extends ConsumerState<SprintTab> {
                 style: mono(size: 11, color: C.dimmer)),
           ]),
         ));
-        rows.addAll(_sink(its).map((t) => item(s, t)));
+        addSections(pid, its);
       }
     } else {
       final its = s.todos.where((t) => t.project == active).toList();
       if (its.isEmpty) return [emptyBox('이 프로젝트엔 커밋 없음')];
-      rows.addAll(_sink(its).map((t) => item(s, t)));
+      addSections(active, its);
     }
     return rows;
   }
 
-  Widget _todoItem(AppState s, Todo t) {
+  /// 한 섹션(같은 프로젝트·같은 완료상태) — ≡ 핸들 드래그로 재배열.
+  Widget _section(AppState s, String? pid, List<Todo> items, bool done,
+          {required bool tutTarget}) =>
+      ReorderableListView.builder(
+        key: ValueKey('sec_${pid}_$done'),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, _, _) =>
+            Material(color: C.panel2, child: child),
+        itemCount: items.length,
+        onReorderItem: (o, n) {
+          final ids = items.map((t) => t.id).toList();
+          ids.insert(n, ids.removeAt(o));
+          ref.read(appProvider.notifier).reorderTodoSection(pid, done, ids);
+        },
+        itemBuilder: (_, i) => _todoItem(s, items[i],
+            key: ValueKey(items[i].id),
+            index: i,
+            tutTarget: tutTarget && i == 0),
+      );
+
+  Widget _todoItem(AppState s, Todo t,
+      {required Key key, required int index, bool tutTarget = false}) {
     final n = ref.read(appProvider.notifier);
-    return Container(
+    Widget row = Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration:
           BoxDecoration(border: Border(top: BorderSide(color: C.line))),
@@ -304,14 +340,24 @@ class _SprintTabState extends ConsumerState<SprintTab> {
           ),
         ],
         const SizedBox(width: 8),
-        // 순서 이동 — 완료 항목은 어차피 밑에 깔리므로 미완료만
-        if (!t.done) ...[
-          _miniBtn('↑', () => n.moveTodo(t.id, -1)),
-          _miniBtn('↓', () => n.moveTodo(t.id, 1)),
-        ],
+        // ≡ 드래그 핸들 — 같은 섹션(완료/미완료) 안에서만 이동
+        ReorderableDragStartListener(
+          index: index,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.grab,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+              child: Text('≡', style: mono(size: 14, color: C.dimmer)),
+            ),
+          ),
+        ),
         _miniBtn('✕', () => n.deleteTodo(t.id)),
       ]),
     );
+    if (tutTarget) {
+      row = KeyedSubtree(key: tutKeyFirstTodo, child: row);
+    }
+    return KeyedSubtree(key: key, child: row);
   }
 
   Widget _miniBtn(String glyph, VoidCallback onTap) => GestureDetector(

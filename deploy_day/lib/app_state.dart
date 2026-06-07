@@ -100,23 +100,20 @@ class AppNotifier extends Notifier<AppState> {
             .toList()));
   }
 
-  /// 커밋 한 칸 이동 (delta ±1) — 같은 프로젝트·같은 완료상태 안에서만.
-  /// (완료 항목은 화면에서 밑으로 가라앉으므로 섞이면 헷갈림)
-  void moveTodo(String id, int delta) {
-    final list = [...state.todos];
-    final i = list.indexWhere((t) => t.id == id);
-    if (i < 0) return;
-    final t = list[i];
-    final sib = [
-      for (var k = 0; k < list.length; k++)
-        if (list[k].project == t.project && list[k].done == t.done) k
+  /// 커밋 드래그 재배열 — 같은 프로젝트·같은 완료상태 섹션 안에서만.
+  /// ids = 그 섹션의 새 순서. 다른 항목들의 위치는 그대로 두고
+  /// 섹션 슬롯에만 새 순서를 채워 넣음.
+  void reorderTodoSection(String? project, bool done, List<String> ids) {
+    final queue = List.of(ids);
+    final byId = {for (final t in state.todos) t.id: t};
+    final next = <Todo>[
+      for (final t in state.todos)
+        if (t.project == project && t.done == done)
+          byId[queue.removeAt(0)]!
+        else
+          t
     ];
-    final np = sib.indexOf(i) + delta;
-    if (np < 0 || np >= sib.length) return;
-    final j = sib[np];
-    list[i] = list[j];
-    list[j] = t;
-    _set(state.copyWith(todos: list));
+    _set(state.copyWith(todos: next));
   }
 
   void deleteTodo(String id) => _set(
@@ -165,17 +162,16 @@ class AppNotifier extends Notifier<AppState> {
             .toList()));
   }
 
-  /// 프로젝트 순서 한 칸 이동 (delta ±1) — 칩·그룹 표시 순서가 같이 바뀜.
-  void moveProject(String id, int delta) {
-    final list = [...state.projects];
-    final i = list.indexWhere((p) => p.id == id);
-    if (i < 0) return;
-    final j = i + delta;
-    if (j < 0 || j >= list.length) return;
-    final p = list[i];
-    list[i] = list[j];
-    list[j] = p;
-    _set(state.copyWith(projects: list));
+  /// 프로젝트 칩 드래그 재배열 — ids = 진행 중(졸업 제외) 프로젝트의 새 순서.
+  /// 졸업한 프로젝트는 제자리 유지.
+  void reorderProjects(List<String> ids) {
+    final queue = List.of(ids);
+    final byId = {for (final p in state.projects) p.id: p};
+    final next = <Project>[
+      for (final p in state.projects)
+        if (!p.done) byId[queue.removeAt(0)]! else p
+    ];
+    _set(state.copyWith(projects: next));
   }
 
   /// 명예의 전당에서 다시 진행.
