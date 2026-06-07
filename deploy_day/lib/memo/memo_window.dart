@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/material.dart';
@@ -49,6 +50,8 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
   int _hwnd = 0;
   Timer? _debounce;
   Timer? _rectWatch;
+  Timer? _anim; // 스냅 슬라이드 애니메이션
+  bool _animating = false;
   ({double x, double y, double w, double h})? _lastRect;
 
   @override
@@ -69,6 +72,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
   void dispose() {
     _debounce?.cancel();
     _rectWatch?.cancel();
+    _anim?.cancel();
     _text.dispose();
     super.dispose();
   }
@@ -97,18 +101,41 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     // 이동/리사이즈 추적 — OS 드래그라 종료 훅이 없어서 폴링.
     // (드래그 중엔 OS 모달 루프가 돌아 타이머가 안 뜀 → 끝난 직후 한 번에 잡힘)
     _rectWatch = Timer.periodic(const Duration(milliseconds: 350), (_) {
+      if (_animating) return; // 슬라이드 중엔 폴링 무시 (자기 이동을 드래그로 오인 X)
       final r = getWindowRect(_hwnd);
       if (r == null || r == _lastRect) return;
       // 드래그/리사이즈 끝남 — 가장자리·이웃 메모에 자석 스냅
       final snapped = _snap(r);
       if (snapped != null && (snapped.x != r.x || snapped.y != r.y)) {
-        setWindowRect(_hwnd, snapped.x, snapped.y, r.w, r.h);
-        final n = getWindowRect(_hwnd) ?? r;
-        _lastRect = n;
-        _send('memoRect', {'x': n.x, 'y': n.y, 'w': n.w, 'h': n.h});
+        _animateSnapTo(r, snapped.x, snapped.y); // 자석에 미끄러지듯
       } else {
         _lastRect = r;
         _send('memoRect', {'x': r.x, 'y': r.y, 'w': r.w, 'h': r.h});
+      }
+    });
+  }
+
+  /// 현재 위치에서 목표(tx,ty)까지 ease-out으로 슬라이드 — 자석 빨림 느낌.
+  void _animateSnapTo(
+      ({double x, double y, double w, double h}) from, double tx, double ty) {
+    _anim?.cancel();
+    _animating = true;
+    final sx = from.x, sy = from.y, w = from.w, h = from.h;
+    final dx = tx - sx, dy = ty - sy;
+    const steps = 14; // ~170ms (12ms × 14)
+    var step = 0;
+    _anim = Timer.periodic(const Duration(milliseconds: 12), (tm) {
+      step++;
+      final t = (step / steps).clamp(0.0, 1.0);
+      final e = 1 - math.pow(1 - t, 3); // cubic ease-out
+      setWindowRect(_hwnd, sx + dx * e, sy + dy * e, w, h);
+      if (step >= steps) {
+        tm.cancel();
+        setWindowRect(_hwnd, tx, ty, w, h); // 끝값 정확히
+        _lastRect = getWindowRect(_hwnd) ?? (x: tx, y: ty, w: w, h: h);
+        _send('memoRect',
+            {'x': _lastRect!.x, 'y': _lastRect!.y, 'w': w, 'h': h});
+        _animating = false;
       }
     });
   }
