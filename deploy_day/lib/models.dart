@@ -1,10 +1,25 @@
 import 'dart:math';
 
-/// 프로젝트 칩 색상 팔레트 — 원본 HTML PALETTE와 동일.
+/// 프로젝트 칩 색상 팔레트 — Claude CLI 터미널 톤 (튀는 원색 금지).
 const kPalette = [
-  '#a855f7', '#22d3a6', '#fbbf24', '#60a5fa',
-  '#fb7185', '#c084fc', '#34d399', '#f9a8d4',
+  '#d97757', '#5dbe74', '#d9a33c', '#4fa3e8',
+  '#e25d56', '#cc66cc', '#56b6c2', '#e8a287',
 ];
+
+/// 구버전(HTML 컨셉) 팔레트 → 현행 팔레트 마이그레이션 (인덱스 1:1).
+/// 저장된 프로젝트 색이 옛 팔레트면 로드 시 자동 교체됨.
+const _legacyPalette = {
+  '#a855f7': '#d97757', // 보라 → Claude 오렌지
+  '#22d3a6': '#5dbe74',
+  '#fbbf24': '#d9a33c',
+  '#60a5fa': '#4fa3e8',
+  '#fb7185': '#e25d56',
+  '#c084fc': '#cc66cc',
+  '#34d399': '#56b6c2',
+  '#f9a8d4': '#e8a287',
+};
+
+String _migrateColor(String c) => _legacyPalette[c] ?? c;
 
 final _rand = Random();
 
@@ -51,7 +66,7 @@ class Project {
   factory Project.fromJson(Map<String, dynamic> j) => Project(
         id: j['id'] as String,
         name: (j['name'] ?? '') as String,
-        color: (j['color'] ?? kPalette[0]) as String,
+        color: _migrateColor((j['color'] ?? kPalette[0]) as String),
         done: j['done'] == true,
       );
 }
