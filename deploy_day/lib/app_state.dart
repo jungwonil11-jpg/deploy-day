@@ -49,6 +49,13 @@ class AppNotifier extends Notifier<AppState> {
     return a == 'all' ? null : a;
   }
 
+  /// 배포자 이름 설정 — 첫 실행 다이얼로그·배너 이름 클릭에서 호출.
+  void setName(String name) {
+    final v = name.trim();
+    if (v.isEmpty) return;
+    _set(state.copyWith(name: v));
+  }
+
   void addTodo(String text) {
     final v = text.trim();
     if (v.isEmpty) return;

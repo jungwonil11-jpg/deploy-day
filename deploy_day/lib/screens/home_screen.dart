@@ -32,6 +32,80 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _scheduleMidnight();
+    // 첫 실행 — 이름 없으면 입력받고 시작
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && ref.read(appProvider).name.isEmpty) _askName();
+    });
+  }
+
+  /// 배포자 이름 입력 — 첫 실행 온보딩 + 배너 이름 클릭 시 재사용.
+  Future<void> _askName() async {
+    final first = ref.read(appProvider).name.isEmpty;
+    final ctl = TextEditingController(text: ref.read(appProvider).name);
+    void submit(BuildContext ctx) {
+      if (ctl.text.trim().isEmpty) return; // 빈 이름으론 못 나감
+      Navigator.pop(ctx, ctl.text);
+    }
+
+    final name = await showDialog<String>(
+      context: context,
+      barrierDismissible: !first,
+      builder: (ctx) => PopScope(
+        canPop: !first,
+        child: AlertDialog(
+          backgroundColor: C.panel,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(6),
+              side: const BorderSide(color: C.accent)),
+          title: Text.rich(TextSpan(children: [
+            TextSpan(
+                text: '✻ ',
+                style:
+                    mono(size: 16, color: C.accent, weight: FontWeight.w700)),
+            TextSpan(
+                text: first ? 'Welcome to deploy-day!' : '이름 변경',
+                style: mono(size: 16, color: C.txt, weight: FontWeight.w700)),
+          ])),
+          content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                    first
+                        ? '배포자 이름부터 박고 시작함.\n나중에 배너의 이름 눌러서 바꿀 수 있음.'
+                        : '새 이름 입력.',
+                    style: kr(size: 13, color: C.dim, height: 1.6)),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: ctl,
+                  autofocus: true,
+                  maxLength: 20,
+                  style: kr(size: 15),
+                  decoration: inputDeco('이름 (예: Victor)').copyWith(
+                    counterText: '',
+                    prefixText: '❯ ',
+                    prefixStyle: mono(
+                        size: 15, color: C.accent, weight: FontWeight.w700),
+                  ),
+                  onSubmitted: (_) => submit(ctx),
+                ),
+              ]),
+          actions: [
+            if (!first)
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('취소', style: mono(size: 13, color: C.dim))),
+            TextButton(
+                onPressed: () => submit(ctx),
+                child: Text(first ? '⏵⏵ 시작' : '저장',
+                    style: mono(
+                        size: 13, color: C.accent, weight: FontWeight.w700))),
+          ],
+        ),
+      ),
+    );
+    if (name == null) return;
+    ref.read(appProvider.notifier).setName(name);
   }
 
   /// 자정 넘어가면 D-day 표시 갱신 (HTML은 새로고침해야 갱신됐음).
@@ -125,9 +199,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               flex: 5,
               child: Column(children: [
                 const SizedBox(height: 4),
-                Text('Welcome back Victor!',
-                    style:
-                        mono(size: 14, color: C.txt, weight: FontWeight.w700)),
+                // 이름 클릭하면 변경 다이얼로그
+                GestureDetector(
+                  onTap: _askName,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: Text(
+                        'Welcome back ${s.name.isEmpty ? '...' : s.name}!',
+                        style: mono(
+                            size: 14, color: C.txt, weight: FontWeight.w700)),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Text(' ▐▛███▜▌\n▝▜█████▛▘\n  ▘▘ ▝▝',
                     textAlign: TextAlign.center,
