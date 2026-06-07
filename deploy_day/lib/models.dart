@@ -15,10 +15,17 @@ String uid() =>
 
 String verStr(int major, int minor) => 'v$major.$minor';
 
-bool isThursday() => DateTime.now().weekday == DateTime.thursday;
+/// DateTime.weekday(1=월..7=일) 인덱스로 쓰는 요일 이름 (0번은 비움).
+const kDayKr = ['', '월', '화', '수', '목', '금', '토', '일'];
+const kDayEn = [
+  '', 'monday', 'tuesday', 'wednesday', 'thursday',
+  'friday', 'saturday', 'sunday',
+];
 
-/// 다음 목요일까지 남은 일수 (목요일 당일이면 0).
-int daysToThu() => (DateTime.thursday - DateTime.now().weekday + 7) % 7;
+bool isShipDay(int day) => DateTime.now().weekday == day;
+
+/// 다음 배포일까지 남은 일수 (당일이면 0).
+int daysToShip(int day) => (day - DateTime.now().weekday + 7) % 7;
 
 String todayStr() => DateTime.now().toIso8601String().substring(0, 10);
 
@@ -164,6 +171,7 @@ class Release {
 
 class AppState {
   final String name; // 배포자 이름 — 첫 실행 때 입력받음
+  final int shipDay; // 배포 요일 (DateTime.weekday, 기본 목요일)
   final int major;
   final int minor;
   final int streak;
@@ -174,6 +182,7 @@ class AppState {
 
   const AppState({
     this.name = '',
+    this.shipDay = DateTime.thursday,
     required this.major,
     required this.minor,
     required this.streak,
@@ -194,6 +203,7 @@ class AppState {
 
   AppState copyWith({
     String? name,
+    int? shipDay,
     int? major,
     int? minor,
     int? streak,
@@ -204,6 +214,7 @@ class AppState {
   }) =>
       AppState(
         name: name ?? this.name,
+        shipDay: shipDay ?? this.shipDay,
         major: major ?? this.major,
         minor: minor ?? this.minor,
         streak: streak ?? this.streak,
@@ -230,6 +241,7 @@ class AppState {
   /// name은 Flutter 버전에서 추가된 키 (HTML 백업엔 없어도 무방).
   Map<String, dynamic> toJson() => {
         'name': name,
+        'shipDay': shipDay,
         'major': major,
         'minor': minor,
         'streak': streak,
@@ -241,6 +253,7 @@ class AppState {
 
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
         name: (j['name'] ?? '') as String,
+        shipDay: (j['shipDay'] ?? DateTime.thursday) as int,
         major: (j['major'] ?? 1) as int,
         minor: (j['minor'] ?? 0) as int,
         streak: (j['streak'] ?? 0) as int,

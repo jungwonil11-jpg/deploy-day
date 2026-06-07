@@ -215,8 +215,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     textAlign: TextAlign.center,
                     style: mono(size: 15, color: C.accent, height: 1.05)),
                 const SizedBox(height: 16),
-                Text('인생 배포 (1주 cycle) · 매주 목요일',
-                    style: mono(size: 12, color: C.dim)),
+                Row(mainAxisSize: MainAxisSize.min, children: [
+                  Text('인생 배포 · ', style: mono(size: 12, color: C.dim)),
+                  _shipDayPicker(s),
+                ]),
                 const SizedBox(height: 4),
                 Text.rich(TextSpan(style: mono(size: 12), children: [
                   TextSpan(text: 'streak ${s.streak}주'),
@@ -240,7 +242,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: C.accent,
                             weight: FontWeight.w700)),
                     const SizedBox(height: 6),
-                    Text('/sprint 에 커밋 쌓고 목요일에 ship 하면 됨',
+                    Text('/sprint 에 커밋 쌓고 ${kDayKr[s.shipDay]}요일에 ship 하면 됨',
                         style: kr(size: 13, height: 1.5)),
                     const SizedBox(height: 12),
                     Container(height: 1, color: C.accent),
@@ -275,10 +277,54 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// 배포 요일 드롭다운 — 목요일이 기본값(추천)이지만 바꿀 수 있음.
+  Widget _shipDayPicker(AppState s) => PopupMenuButton<int>(
+        tooltip: '배포 요일 변경',
+        color: C.panel,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+            side: const BorderSide(color: C.border)),
+        offset: const Offset(0, 22),
+        onSelected: (d) async {
+          ref.read(appProvider.notifier).setShipDay(d);
+          await updateTrayShipDay(d);
+          if (mounted) toast(context, '배포일 변경됨 — 매주 ${kDayKr[d]}요일');
+        },
+        itemBuilder: (_) => [
+          for (var d = DateTime.monday; d <= DateTime.sunday; d++)
+            PopupMenuItem(
+              value: d,
+              height: 34,
+              child: Text.rich(TextSpan(children: [
+                TextSpan(
+                    text: d == s.shipDay ? '⏺ ' : '  ',
+                    style: mono(size: 12, color: C.accent)),
+                TextSpan(
+                    text: '${kDayKr[d]}요일',
+                    style: mono(
+                        size: 13,
+                        color: d == s.shipDay ? C.txt : C.dim,
+                        weight: d == s.shipDay
+                            ? FontWeight.w700
+                            : FontWeight.w400)),
+                if (d == DateTime.thursday)
+                  TextSpan(
+                      text: ' (추천)',
+                      style: mono(size: 11, color: C.accent)),
+              ])),
+            ),
+        ],
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Text('매주 ${kDayKr[s.shipDay]}요일 ▾',
+              style: mono(size: 12, color: C.dim)),
+        ),
+      );
+
   /// ▌ 어나운스 라인 — "Opus 4.8 is here!" 자리. D-day·경고가 여기 뜸.
   Widget _announce(AppState s) {
-    final today = isThursday();
-    final dd = daysToThu();
+    final today = isShipDay(s.shipDay);
+    final dd = daysToShip(s.shipDay);
     final doneN = s.todos.where((t) => t.done).length;
     Color color = C.accent;
     String head;
@@ -295,7 +341,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       head = '오늘이 배포일!';
       rest = ' ⏵⏵ ship 으로 ${verStr(s.major, s.minor + 1)} 릴리즈 ㄱㄱ';
     } else {
-      head = 'D-$dd · 목요일 배포!';
+      head = 'D-$dd · ${kDayKr[s.shipDay]}요일 배포!';
       rest = ' 커밋 쌓는 중 · streak ${s.streak}주';
     }
     return Container(
@@ -359,12 +405,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Text('⏵⏵ deploy mode on',
                         style: mono(
                             size: 12, color: C.pink, weight: FontWeight.w700)),
-                    Text(' (every thursday)',
+                    Text(' (every ${kDayEn[s.shipDay]})',
                         style: mono(size: 12, color: C.pink)),
                     Text(
-                        isThursday()
+                        isShipDay(s.shipDay)
                             ? ' · 🚀 today'
-                            : ' · D-${daysToThu()} for ship',
+                            : ' · D-${daysToShip(s.shipDay)} for ship',
                         style: mono(size: 12, color: C.dimmer)),
                   ]),
                 ]),

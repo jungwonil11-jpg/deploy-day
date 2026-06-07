@@ -247,15 +247,15 @@ class _SprintTabState extends ConsumerState<SprintTab> {
 
   /// 배포 바 — "⏵⏵ accept edits on" 스타일.
   Widget _shipBar(AppState s) {
-    final ready = isThursday();
+    final ready = isShipDay(s.shipDay);
     final done = s.todos.where((t) => t.done).length;
     final label = ready
         ? '⏵⏵ ship ${verStr(s.major, s.minor + 1)} · $done건 완료'
-        : '\$ ship — D-${daysToThu()} · $done/${s.todos.length} 완료';
+        : '\$ ship — D-${daysToShip(s.shipDay)} · $done/${s.todos.length} 완료';
     return GestureDetector(
       onTap: () {
         if (!ready) {
-          toast(context, '배포는 목요일에 🚀 (지금은 커밋 쌓는 날)');
+          toast(context, '배포는 ${kDayKr[s.shipDay]}요일에 🚀 (지금은 커밋 쌓는 날)');
           return;
         }
         _openShip(s);

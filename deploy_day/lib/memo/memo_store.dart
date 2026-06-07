@@ -90,10 +90,12 @@ class MemoNotifier extends Notifier<List<Memo>> {
     final me = await WindowController.fromCurrentEngine();
     _mainWindowId = me.windowId;
     await me.setWindowMethodHandler(_onMessage);
-    // 메인 엔진 첫 프레임 전에 서브창을 스폰하면 flutter_windows.dll에서
-    // access violation(0xc0000005)으로 프로세스가 통째로 죽음 — 프레임 이후로 미룸.
+    // 서브창 엔진 생성(CreateIsolate)이 메인 엔진의 warm-up 프레임과 겹치면
+    // "CreateIsolate expects there to be no current isolate"로 네이티브 abort됨
+    // (desktop_multi_window 레벨 레이스). 시작 직후 프레임들이 다 지나가도록
+    // 넉넉히 미뤄서 회피.
     await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(const Duration(seconds: 2));
     for (final m in state.where((m) => m.open)) {
       await _spawn(m);
     }

@@ -7,7 +7,9 @@ import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:tray_manager/tray_manager.dart';
 import 'package:window_manager/window_manager.dart';
 
+import 'app_state.dart';
 import 'memo/memo_store.dart';
+import 'models.dart';
 
 /// 데스크탑 셸(트레이/자동시작/항상위) 활성 여부 — Windows 데스크탑 전용.
 /// Android/Web 빌드에선 전부 no-op으로 빠짐.
@@ -59,6 +61,12 @@ Future<void> _showWindow() async {
   await windowManager.focus();
 }
 
+/// 트레이 툴팁에 배포 요일 반영 — 초기화·요일 변경 시 호출.
+Future<void> updateTrayShipDay(int day) async {
+  if (!isDesktopShell) return;
+  await trayManager.setToolTip('deploy-day — 매주 ${kDayKr[day]}요일은 배포일');
+}
+
 /// 진짜 종료 — preventClose 풀고 트레이 아이콘까지 정리.
 Future<void> quitApp() async {
   await trayManager.destroy();
@@ -104,7 +112,7 @@ class _DesktopShellHostState extends ConsumerState<DesktopShellHost>
 
   Future<void> _initTray() async {
     await trayManager.setIcon('assets/tray_icon.ico');
-    await trayManager.setToolTip('deploy-day — 매주 목요일은 배포일');
+    await updateTrayShipDay(ref.read(appProvider).shipDay);
     _autostart = await launchAtStartup.isEnabled();
     await _rebuildTrayMenu();
   }

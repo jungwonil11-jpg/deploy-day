@@ -56,6 +56,12 @@ class AppNotifier extends Notifier<AppState> {
     _set(state.copyWith(name: v));
   }
 
+  /// 배포 요일 변경 (DateTime.weekday 1~7). 기본은 목요일.
+  void setShipDay(int day) {
+    if (day < DateTime.monday || day > DateTime.sunday) return;
+    _set(state.copyWith(shipDay: day));
+  }
+
   void addTodo(String text) {
     final v = text.trim();
     if (v.isEmpty) return;

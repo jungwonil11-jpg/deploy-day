@@ -22,7 +22,7 @@ class ChangelogTab extends ConsumerWidget {
         title: 'changelog · 내 인생 릴리즈 히스토리',
         child: Column(children: [
           if (releases.isEmpty)
-            emptyBox('아직 배포 이력 없음\n첫 목요일에 v1.1 찍어보자')
+            emptyBox('아직 배포 이력 없음\n첫 ${kDayKr[s.shipDay]}요일에 v1.1 찍어보자')
           else
             for (var i = 0; i < releases.length; i++)
               _ReleaseTile(
