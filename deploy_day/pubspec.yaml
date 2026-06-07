@@ -36,7 +36,6 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_riverpod: ^3.3.1
   shared_preferences: ^2.5.5
-  google_fonts: ^8.1.0
   confetti: ^0.8.0
   window_manager: ^0.5.1
   tray_manager: ^0.5.2
@@ -69,6 +68,26 @@ flutter:
 
   assets:
     - assets/tray_icon.ico
+
+  # 폰트 번들링 — 런타임 네트워크 페치 제거 (개인정보처리방침 3조 근거).
+  # 라이선스: OFL (assets/fonts/OFL-*.txt 동봉)
+  fonts:
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/JetBrainsMono-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/JetBrainsMono-Italic.ttf
+          style: italic
+    - family: Nanum Gothic Coding
+      fonts:
+        - asset: assets/fonts/NanumGothicCoding-Regular.ttf
+        - asset: assets/fonts/NanumGothicCoding-Bold.ttf
+          weight: 700
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

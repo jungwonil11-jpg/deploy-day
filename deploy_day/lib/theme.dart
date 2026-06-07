@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'models.dart';
 
@@ -33,7 +32,7 @@ Color projectColor(AppState s, String? pid) {
   return p == null ? C.dimmer : hexColor(p.color);
 }
 
-/// JetBrains Mono — CLI 본체 폰트.
+/// JetBrains Mono — CLI 본체 폰트 (에셋 번들, 네트워크 페치 없음).
 TextStyle mono({
   double size = 12,
   Color color = C.dim,
@@ -42,7 +41,8 @@ TextStyle mono({
   double? height,
   bool italic = false,
 }) =>
-    GoogleFonts.jetBrainsMono(
+    TextStyle(
+        fontFamily: 'JetBrains Mono',
         fontSize: size,
         color: color,
         fontWeight: weight,
@@ -50,15 +50,19 @@ TextStyle mono({
         height: height,
         fontStyle: italic ? FontStyle.italic : FontStyle.normal);
 
-/// Nanum Gothic Coding — 한글도 고정폭으로 (풀 터미널 감성).
+/// Nanum Gothic Coding — 한글도 고정폭으로 (풀 터미널 감성, 에셋 번들).
 TextStyle kr({
   double size = 15,
   Color color = C.txt,
   FontWeight weight = FontWeight.w400,
   double? height,
 }) =>
-    GoogleFonts.nanumGothicCoding(
-        fontSize: size, color: color, fontWeight: weight, height: height);
+    TextStyle(
+        fontFamily: 'Nanum Gothic Coding',
+        fontSize: size,
+        color: color,
+        fontWeight: weight,
+        height: height);
 
 ThemeData buildTheme() => ThemeData(
       brightness: Brightness.dark,
