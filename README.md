@@ -5,6 +5,20 @@
 
 Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바일 앱.
 
+## ⬇️ 다운로드 (Windows)
+
+**[→ 최신 릴리즈에서 받기](https://github.com/jungwonil11-jpg/deploy-day/releases/latest)**
+
+| 파일 | 설명 |
+|------|------|
+| `deploy-day_x.y.z_x64-setup.exe` | 설치 관리자 (권장) |
+| `deploy-day_x.y.z_x64_en-US.msi` | MSI 패키지 |
+
+> ⚠️ 서명되지 않은 빌드라 설치 시 **SmartScreen / Smart App Control** 경고가 뜰 수 있습니다.
+> `추가 정보 → 실행`으로 진행하세요. (정식 서명은 MS Store 출시 시 적용 예정)
+>
+> 설치 파일 용량은 **~3MB** — 모든 데이터는 기기에만 저장되고 네트워크 전송이 없습니다.
+
 ---
 
 ## ⚠️ 현재 버전: v2 (Tauri) — [`deploy-day-v2/`](deploy-day-v2/)
