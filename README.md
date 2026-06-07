@@ -1,9 +1,31 @@
 # deploy-day
 
-> **매주 목요일은 내 인생 배포일.**
-> 인생을 소프트웨어처럼 운영하는 todo 앱 — 평일에 커밋을 쌓고, 목요일마다 내 인생의 새 버전을 배포한다.
+> **매주 정해진 요일은 내 인생 배포일.**
+> 인생을 소프트웨어처럼 운영하는 todo 앱 — 평일에 커밋을 쌓고, 배포일마다 내 인생의 새 버전을 배포한다.
 
-Claude Code CLI 스타일의 터미널 감성 UI로 만든 Flutter 데스크탑/모바일 앱.
+Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바일 앱.
+
+---
+
+## ⚠️ 현재 버전: v2 (Tauri) — [`deploy-day-v2/`](deploy-day-v2/)
+
+이 프로젝트는 **Flutter(v1)로 먼저 만들었다가, Tauri(v2)로 재작성**했다.
+
+**왜 갈아탔나:** v1의 핵심 기능인 *바탕화면 포스트잇(멀티윈도우)* 이
+`desktop_multi_window` + Flutter 엔진 레벨에서 access violation 크래시(0xc0000005)를
+일으켰다. Flutter 공식 이슈(#138248 등)로도 미해결인 구조적 결함이라 Dart로 막을 수 없었다.
+멀티윈도우가 이 앱의 핵심 UX인 만큼, **"메모 여러 개 띄운 채 재시작 → 크래시 0"** 을
+기준으로 Tauri(OS 네이티브 웹뷰, 창마다 무거운 엔진을 띄우지 않음)로 재설계했고,
+그 시나리오를 통과시켰다.
+
+| | v1 (Flutter) | v2 (Tauri) |
+|---|---|---|
+| 멀티윈도우 메모 | 크래시 ❌ | 안정 ✅ |
+| 번들 크기 | — | 수 MB (Electron 대비 경량) |
+| 데스크탑 + 모바일 | ✅ | ✅ (Tauri 2) |
+| 상태 | archived (`deploy_day/`) | **현재 (`deploy-day-v2/`)** |
+
+---
 
 ## 컨셉
 
@@ -12,61 +34,48 @@ Claude Code CLI 스타일의 터미널 감성 UI로 만든 Flutter 데스크탑/
 | 개발 용어 | 이 앱에서의 의미 |
 |-----------|------------------|
 | `commit` | 이번 주에 할 일 추가 |
-| **deploy day** | 매주 목요일 — 한 주 결산하고 버전 올리는 날 (v1.3 → v1.4) |
+| **deploy day** | 정해진 요일(기본 목요일) — 한 주 결산하고 버전 올리는 날 |
 | `ship` | 완료한 일을 릴리즈 노트로 박제 |
 | `rollback` | 못 끝낸 일은 다음 스프린트로 이월 |
 | `streak` | 연속 배포 주차 — 빈손 배포면 0으로 리셋 |
 | `SHIPPED` 🎓 | 끝까지 간 프로젝트 졸업 (명예의 전당행) |
 
-## 기능
+## 기능 (v2)
 
-- **`/sprint`** — 이번 주 할 일. 프로젝트별 분류, 목요일에 `⏵⏵ ship` 버튼 활성화
+- **`/sprint`** — 이번 주 할 일. 프로젝트별 분류(드래그 이동), 배포일에 `⏵⏵ ship` 활성화
 - **`/backlog`** — 다음 버전 아이디어 메모, 스프린트로 pull
-- **`/changelog`** — 내 인생 릴리즈 히스토리. 버전별 + / − 디프 형식
-- **`/memo`** — 바탕화면 포스트잇 (Windows 전용)
-  - 메모를 별도 창으로 띄워 항상 위에 고정
-  - 위치·크기·내용 자동 저장, 앱 재시작 시 그 자리에 복원
-- **데스크탑 상주** (Windows 전용)
-  - 트레이 상주: 닫기(X)를 눌러도 트레이에서 대기
-  - 윈도우 시작 시 자동 실행 (트레이 메뉴에서 토글)
-  - 항상 위 고정 `[pin]`
-- 배포일 D-day · streak 추적 · 배포 컨페티 · JSON 백업/복원
+- **`/changelog`** — 인생 릴리즈 히스토리 + 졸업 프로젝트 명예의 전당
+- **`/memo`** — 바탕화면 포스트잇 (별도 창, 항상 위 고정, 7색, 가장자리·메모끼리 자석 스냅 + 슬라이드 애니, →commit 으로 스프린트 전송)
+- **`/config`** — 페르소나(Victor·Sunny·Sage 말투 전환)·다크/라이트·정책·백업
+- **데스크탑 상주** — 트레이(X→트레이 숨김)·자동 시작·항상 위 고정
+- 인터랙티브 튜토리얼(13단계 코치마크)·첫 실행 온보딩·이스터에그(Clawd)
+- 배포일 D-day · streak · JSON 백업/복원
 
-## 스택
+## 스택 (v2)
 
-- **Flutter** (Windows / Android / Web) + Riverpod
-- 로컬 저장: `shared_preferences` — 단일 JSON 직렬화
-- 멀티윈도우: `desktop_multi_window` + **win32 FFI 직접 호출**
-  - 서브윈도우 엔진에는 플러그인이 등록되지 않으므로, 포스트잇의 frameless/TOPMOST/드래그는 `package:win32`로 직접 처리
-- 트레이/자동시작: `tray_manager` · `launch_at_startup` · `window_manager`
-- 폰트: JetBrains Mono + Nanum Gothic Coding (한글 고정폭)
+- **Tauri 2** + **React** + **TypeScript** + **Vite** + **Zustand** + 순수 CSS
+- 로컬 저장: `@tauri-apps/plugin-store` (단일 JSON)
+- 멀티윈도우: Tauri `WebviewWindow` (OS 네이티브, 메인=유일 writer + 이벤트 IPC)
+- 트레이/자동시작/클립보드: Tauri tray-icon + `plugin-autostart` + `plugin-clipboard-manager`
 
-## 실행
+## 실행 (v2)
 
 ```bash
-cd deploy_day
-flutter pub get
-flutter run -d windows   # 또는 -d chrome
+cd deploy-day-v2
+npm install
+npm run tauri dev      # 개발
+npm run tauri build    # 릴리즈 (Windows exe/MSIX)
 ```
 
-> 네이티브 플러그인을 추가/제거한 뒤에는 반드시 `flutter clean` 후 빌드할 것.
-> 빌드 캐시가 꼬이면 앱이 시작 직후 로그 없이 종료된다.
-
-## 구조
-
-```
-deploy-day.html        # 원본 프로토타입 (단일 HTML, localStorage)
-deploy_day/            # Flutter 재작성
-  lib/
-    theme.dart         # Claude Code CLI 스타일 테마 (오렌지 #D97757, CliBox)
-    app_state.dart     # 앱 상태 + 비즈니스 로직 (Riverpod)
-    desktop_shell.dart # 트레이 · 자동시작 · 항상 위
-    memo/              # 바탕화면 포스트잇 (멀티윈도우 + win32 FFI)
-    screens/ widgets/  # UI
-```
+> 사전 요구: Node, Rust(rustup), Visual Studio C++ 빌드 도구, WebView2(Win11 기본 내장).
 
 ## 로드맵
 
-- [x] Phase 1 — 로컬 저장 기능 패리티 + 데스크탑 상주 + 포스트잇
-- [ ] Phase 2 — Firebase Auth(구글 로그인) + Firestore 기기 간 동기화
-- [ ] Phase 3 — Firebase Hosting(웹) + Play Store 배포
+- [x] v1 (Flutter) — 로컬 기능 + 데스크탑 상주 + 포스트잇 *(멀티윈도우 안정성 한계로 종료)*
+- [x] **v2 (Tauri)** — 기능 패리티 + 멀티윈도우 안정성 확보
+- [ ] MS Store(MSIX) / Google Play(AAB) 출시
+- [ ] Firebase Auth(구글 로그인) + Firestore — **멀티기기 동기화** (최종 목표)
+
+---
+
+> v1 소스는 `deploy_day/`에 보존(참고·전환 맥락용), 상세 진행 기록은 [`todo.md`](todo.md)·[`v2-plan.md`](v2-plan.md).

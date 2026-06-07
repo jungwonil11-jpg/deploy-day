@@ -1,0 +1,293 @@
+// 앱 상태 + 비즈니스 로직 (v1 app_state.dart 포팅) — Zustand.
+// 영속화: Tauri plugin-store (state.json). v1 shared_preferences 대응.
+
+import { create } from 'zustand';
+import { load, type Store } from '@tauri-apps/plugin-store';
+import {
+  type AppState,
+  type Release,
+  type Memo,
+  seedState,
+  normalizeState,
+  uid,
+  todayStr,
+  kPalette,
+  kMemoDarkDefault,
+  kMemoLightDefault,
+} from './types';
+import { openMemoWindow, closeMemoWindow } from './memoWindows';
+
+const STORE_FILE = 'deployday.json';
+const STATE_KEY = 'state';
+
+let tauriStore: Store | null = null;
+
+interface AppStore {
+  s: AppState;
+  activeProject: string; // 'all' 또는 project id
+  tab: number;
+  ready: boolean;
+
+  // 초기화 — 영속 데이터 로드
+  hydrate: () => Promise<void>;
+
+  // 설정
+  setName: (name: string) => void;
+  setShipDay: (day: number) => void;
+  setPersona: (id: string) => void;
+  setDark: (dark: boolean) => void;
+  setActiveProject: (v: string) => void;
+  setTab: (v: number) => void;
+
+  // 투두
+  addTodo: (text: string) => void;
+  toggleTodo: (id: string) => void;
+  editTodo: (id: string, text: string) => void;
+  deleteTodo: (id: string) => void;
+  reorderTodoSection: (project: string | null, done: boolean, ids: string[]) => void;
+  moveTodoToProject: (id: string, project: string | null) => void; // 커밋을 다른 프로젝트로
+
+  // 백로그
+  addBacklog: (text: string) => void;
+  deleteBacklog: (id: string) => void;
+  pullBacklog: (id: string) => void;
+
+  // 프로젝트
+  addProject: (name: string) => void;
+  renameProject: (id: string, name: string) => void;
+  reorderProjects: (ids: string[]) => void;
+  reviveProject: (id: string) => void;
+
+  // 배포
+  ship: (title: string, graduated: string[]) => Release;
+
+  // 메모 (floating 창)
+  newMemo: () => Promise<void>;
+  openMemo: (id: string) => Promise<void>;
+  deleteMemo: (id: string) => Promise<void>;
+  patchMemo: (id: string, patch: Partial<Memo>) => void; // 창에서 온 변경 반영
+  markMemoClosed: (id: string) => void;
+  restoreMemos: () => Promise<void>; // 시작 시 열려있던 메모 복원
+
+  // 백업
+  exportJson: () => string;
+  importJson: (raw: string) => void;
+  reset: () => void;
+}
+
+export const useApp = create<AppStore>((set, get) => {
+  // 상태 갱신 + 영속화
+  const commit = (next: AppState) => {
+    set({ s: next });
+    void tauriStore?.set(STATE_KEY, next);
+    void tauriStore?.save();
+  };
+
+  const curTarget = (): string | null => {
+    const a = get().activeProject;
+    return a === 'all' ? null : a;
+  };
+
+  return {
+    s: seedState(),
+    activeProject: 'all',
+    tab: 0,
+    ready: false,
+
+    hydrate: async () => {
+      tauriStore = await load(STORE_FILE);
+      const raw = await tauriStore.get(STATE_KEY);
+      set({ s: raw ? normalizeState(raw) : seedState(), ready: true });
+    },
+
+    setName: (name) => {
+      const v = name.trim();
+      if (!v) return;
+      commit({ ...get().s, name: v });
+    },
+    setShipDay: (day) => {
+      if (day < 1 || day > 7) return;
+      commit({ ...get().s, shipDay: day });
+    },
+    setPersona: (id) => commit({ ...get().s, persona: id }),
+    setDark: (dark) => commit({ ...get().s, dark }),
+    setActiveProject: (v) => set({ activeProject: v }),
+    setTab: (v) => set({ tab: v }),
+
+    addTodo: (text) => {
+      const v = text.trim();
+      if (!v) return;
+      const s = get().s;
+      commit({
+        ...s,
+        todos: [...s.todos, { id: uid(), text: v, done: false, carried: false, project: curTarget() }],
+      });
+    },
+    toggleTodo: (id) => {
+      const s = get().s;
+      commit({
+        ...s,
+        todos: s.todos.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
+      });
+    },
+    editTodo: (id, text) => {
+      const v = text.trim();
+      if (!v) return;
+      const s = get().s;
+      commit({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, text: v } : t)) });
+    },
+    deleteTodo: (id) => {
+      const s = get().s;
+      commit({ ...s, todos: s.todos.filter((t) => t.id !== id) });
+    },
+    moveTodoToProject: (id, project) => {
+      const s = get().s;
+      commit({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, project } : t)) });
+    },
+    reorderTodoSection: (project, done, ids) => {
+      const s = get().s;
+      const queue = [...ids];
+      const byId = new Map(s.todos.map((t) => [t.id, t]));
+      const next = s.todos.map((t) =>
+        t.project === project && t.done === done ? byId.get(queue.shift()!)! : t,
+      );
+      commit({ ...s, todos: next });
+    },
+
+    addBacklog: (text) => {
+      const v = text.trim();
+      if (!v) return;
+      const s = get().s;
+      commit({ ...s, backlog: [...s.backlog, { id: uid(), text: v, project: curTarget() }] });
+    },
+    deleteBacklog: (id) => {
+      const s = get().s;
+      commit({ ...s, backlog: s.backlog.filter((b) => b.id !== id) });
+    },
+    pullBacklog: (id) => {
+      const s = get().s;
+      const it = s.backlog.find((b) => b.id === id);
+      if (!it) return;
+      commit({
+        ...s,
+        todos: [...s.todos, { id: uid(), text: it.text, done: false, carried: false, project: it.project }],
+        backlog: s.backlog.filter((b) => b.id !== id),
+      });
+    },
+
+    addProject: (name) => {
+      const v = name.trim();
+      if (!v) return;
+      const s = get().s;
+      const color = kPalette[s.projects.length % kPalette.length];
+      const id = uid();
+      commit({ ...s, projects: [...s.projects, { id, name: v, color, done: false }] });
+      set({ activeProject: id });
+    },
+    renameProject: (id, name) => {
+      const v = name.trim();
+      if (!v) return;
+      const s = get().s;
+      commit({ ...s, projects: s.projects.map((p) => (p.id === id ? { ...p, name: v } : p)) });
+    },
+    reorderProjects: (ids) => {
+      const s = get().s;
+      const queue = [...ids];
+      const byId = new Map(s.projects.map((p) => [p.id, p]));
+      const next = s.projects.map((p) => (!p.done ? byId.get(queue.shift()!)! : p));
+      commit({ ...s, projects: next });
+    },
+    reviveProject: (id) => {
+      const s = get().s;
+      commit({ ...s, projects: s.projects.map((p) => (p.id === id ? { ...p, done: false } : p)) });
+    },
+
+    ship: (title, graduated) => {
+      const s = get().s;
+      const shippedCount = s.todos.filter((t) => t.done).length;
+      let major = s.major;
+      let minor = s.minor + 1;
+      if (minor >= 10) {
+        major += 1;
+        minor = 0;
+      }
+      const release: Release = {
+        major,
+        minor,
+        title: title.trim(),
+        date: todayStr(),
+        graduated: [...graduated],
+        notes: s.todos.map((t) => ({ text: t.text, done: t.done, project: t.project })),
+      };
+      commit({
+        ...s,
+        major,
+        minor,
+        streak: shippedCount > 0 ? s.streak + 1 : 0,
+        projects: s.projects.map((p) => (graduated.includes(p.id) ? { ...p, done: true } : p)),
+        todos: s.todos
+          .filter((t) => !t.done && !(t.project && graduated.includes(t.project)))
+          .map((t) => ({ id: uid(), text: t.text, done: false, carried: true, project: t.project })),
+        releases: [...s.releases, release],
+      });
+      if (graduated.includes(get().activeProject)) set({ activeProject: 'all' });
+      return release;
+    },
+
+    /* ---------- 메모 (floating 창) ---------- */
+    newMemo: async () => {
+      const s = get().s;
+      const n = s.memos.length;
+      const m: Memo = {
+        id: uid(),
+        text: '',
+        x: 140 + (n % 8) * 36,
+        y: 140 + (n % 8) * 36,
+        w: 300,
+        h: 220,
+        open: true,
+        pinned: false,
+        color: s.dark ? kMemoDarkDefault : kMemoLightDefault,
+      };
+      commit({ ...s, memos: [...s.memos, m] });
+      await openMemoWindow(m);
+    },
+    openMemo: async (id) => {
+      const s = get().s;
+      const m = s.memos.find((x) => x.id === id);
+      if (!m) return;
+      if (!m.open) commit({ ...s, memos: s.memos.map((x) => (x.id === id ? { ...x, open: true } : x)) });
+      await openMemoWindow({ ...m, open: true });
+    },
+    deleteMemo: async (id) => {
+      await closeMemoWindow(id);
+      const s = get().s;
+      commit({ ...s, memos: s.memos.filter((m) => m.id !== id) });
+    },
+    patchMemo: (id, patch) => {
+      const s = get().s;
+      commit({ ...s, memos: s.memos.map((m) => (m.id === id ? { ...m, ...patch } : m)) });
+    },
+    markMemoClosed: (id) => {
+      const s = get().s;
+      commit({ ...s, memos: s.memos.map((m) => (m.id === id ? { ...m, open: false } : m)) });
+    },
+    restoreMemos: async () => {
+      // 시작 시 열려있던 메모 순차 복원 (Tauri는 창 동시생성도 안정적이나 순차가 깔끔)
+      for (const m of get().s.memos.filter((x) => x.open)) {
+        await openMemoWindow(m);
+      }
+    },
+
+    exportJson: () => JSON.stringify(get().s, null, 2),
+    importJson: (raw) => {
+      const parsed = normalizeState(JSON.parse(raw));
+      set({ activeProject: 'all' });
+      commit(parsed);
+    },
+    reset: () => {
+      set({ activeProject: 'all' });
+      commit(seedState());
+    },
+  };
+});
