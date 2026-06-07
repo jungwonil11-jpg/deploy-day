@@ -40,7 +40,7 @@ class _ShipDialogState extends State<_ShipDialog> {
       backgroundColor: C.panel,
       shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(6),
-          side: const BorderSide(color: C.border)),
+          side: BorderSide(color: C.border)),
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 480),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -48,8 +48,7 @@ class _ShipDialogState extends State<_ShipDialog> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: C.line))),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: C.line))),
             child:
                 Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text.rich(TextSpan(children: [
@@ -89,8 +88,7 @@ class _ShipDialogState extends State<_ShipDialog> {
           // 푸터
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            decoration: const BoxDecoration(
-                border: Border(top: BorderSide(color: C.line))),
+            decoration: BoxDecoration(border: Border(top: BorderSide(color: C.line))),
             child: Row(children: [
               Expanded(
                 child: GestureDetector(

@@ -49,8 +49,7 @@ class _BacklogTabState extends ConsumerState<BacklogTab> {
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: const BoxDecoration(
-                  border: Border(top: BorderSide(color: C.line))),
+              decoration: BoxDecoration(border: Border(top: BorderSide(color: C.line))),
               child: Row(children: [
                 PDot(projectColor(s, b.project)),
                 const SizedBox(width: 11),

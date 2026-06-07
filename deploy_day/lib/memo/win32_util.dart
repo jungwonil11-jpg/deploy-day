@@ -34,13 +34,20 @@ void claimWindowTitle(int hwnd, String title) {
   });
 }
 
-/// 타이틀바 제거 + 항상 위. WS_THICKFRAME은 남겨서 가장자리 리사이즈는 유지.
+/// 타이틀바 제거. WS_THICKFRAME은 남겨서 가장자리 리사이즈는 유지.
+/// 항상 위는 기본 OFF — setTopmost로 따로 켬 (일반 메모앱 관례).
 void makeStickyStyle(int hwnd) {
   final style = GetWindowLongPtr(hwnd, GWL_STYLE);
   SetWindowLongPtr(hwnd, GWL_STYLE,
       style & ~(WS_CAPTION | WS_MINIMIZEBOX | WS_MAXIMIZEBOX | WS_SYSMENU));
-  SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0,
-      SWP_NOMOVE | SWP_NOSIZE | SWP_FRAMECHANGED);
+  SetWindowPos(hwnd, NULL, 0, 0, 0, 0,
+      SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
+}
+
+/// 항상 위 토글 — 메모 타이틀바 [pin]에서 호출.
+void setTopmost(int hwnd, bool on) {
+  SetWindowPos(hwnd, on ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0,
+      SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
 }
 
 void setWindowRect(int hwnd, double x, double y, double w, double h) {

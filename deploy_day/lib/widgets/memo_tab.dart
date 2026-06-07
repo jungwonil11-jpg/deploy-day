@@ -20,8 +20,7 @@ class MemoTab extends ConsumerWidget {
         // 새 메모 버튼 행
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: C.line))),
+          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: C.line))),
           child: Row(children: [
             Expanded(
               child: Text('트레이 우클릭 → 새 메모 로도 만들 수 있음',
@@ -62,7 +61,7 @@ class MemoTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration:
-          const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
+          BoxDecoration(border: Border(top: BorderSide(color: C.line))),
       child: Row(children: [
         Text('⏺', style: mono(size: 12, color: open ? C.ship : C.dimmer)),
         const SizedBox(width: 11),

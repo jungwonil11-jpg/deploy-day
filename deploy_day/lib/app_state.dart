@@ -65,6 +65,9 @@ class AppNotifier extends Notifier<AppState> {
   /// 말투 페르소나 변경 — /config 에서 호출.
   void setPersona(String id) => _set(state.copyWith(persona: id));
 
+  /// 다크/라이트 토글 — /config 에서 호출.
+  void setDark(bool dark) => _set(state.copyWith(dark: dark));
+
   void addTodo(String text) {
     final v = text.trim();
     if (v.isEmpty) return;
@@ -76,6 +79,35 @@ class AppNotifier extends Notifier<AppState> {
       todos: state.todos
           .map((t) => t.id == id ? t.copyWith(done: !t.done) : t)
           .toList()));
+
+  /// 커밋 문구 수정 — 행 텍스트 클릭에서 호출.
+  void editTodo(String id, String text) {
+    final v = text.trim();
+    if (v.isEmpty) return;
+    _set(state.copyWith(
+        todos: state.todos
+            .map((t) => t.id == id ? t.copyWith(text: v) : t)
+            .toList()));
+  }
+
+  /// 커밋 한 칸 이동 (delta ±1) — 같은 프로젝트·같은 완료상태 안에서만.
+  /// (완료 항목은 화면에서 밑으로 가라앉으므로 섞이면 헷갈림)
+  void moveTodo(String id, int delta) {
+    final list = [...state.todos];
+    final i = list.indexWhere((t) => t.id == id);
+    if (i < 0) return;
+    final t = list[i];
+    final sib = [
+      for (var k = 0; k < list.length; k++)
+        if (list[k].project == t.project && list[k].done == t.done) k
+    ];
+    final np = sib.indexOf(i) + delta;
+    if (np < 0 || np >= sib.length) return;
+    final j = sib[np];
+    list[i] = list[j];
+    list[j] = t;
+    _set(state.copyWith(todos: list));
+  }
 
   void deleteTodo(String id) => _set(
       state.copyWith(todos: state.todos.where((t) => t.id != id).toList()));
@@ -111,6 +143,29 @@ class AppNotifier extends Notifier<AppState> {
     _set(state.copyWith(
         projects: [...state.projects, Project(id: id, name: name, color: color)]));
     ref.read(activeProjectProvider.notifier).set(id);
+  }
+
+  /// 프로젝트 이름 수정 — 칩의 ✎ 에서 호출.
+  void renameProject(String id, String name) {
+    final v = name.trim();
+    if (v.isEmpty) return;
+    _set(state.copyWith(
+        projects: state.projects
+            .map((p) => p.id == id ? p.copyWith(name: v) : p)
+            .toList()));
+  }
+
+  /// 프로젝트 순서 한 칸 이동 (delta ±1) — 칩·그룹 표시 순서가 같이 바뀜.
+  void moveProject(String id, int delta) {
+    final list = [...state.projects];
+    final i = list.indexWhere((p) => p.id == id);
+    if (i < 0) return;
+    final j = i + delta;
+    if (j < 0 || j >= list.length) return;
+    final p = list[i];
+    list[i] = list[j];
+    list[j] = p;
+    _set(state.copyWith(projects: list));
   }
 
   /// 명예의 전당에서 다시 진행.

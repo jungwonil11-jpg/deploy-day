@@ -101,12 +101,59 @@ class _SprintTabState extends ConsumerState<SprintTab> {
           onTap: () => setActive('all')),
       for (final p in s.projects.where((p) => !p.done))
         chip(
-            label: p.name,
+            // 활성 칩은 ✎ 힌트 — 한 번 더 누르면 설정(이름·순서)
+            label: active == p.id ? '${p.name} ✎' : p.name,
             dot: hexColor(p.color),
             on: active == p.id,
-            onTap: () => setActive(p.id)),
+            onTap: () =>
+                active == p.id ? _projectSettings(p) : setActive(p.id)),
       chip(label: '+ 프로젝트', on: false, dashed: true, onTap: _addProject),
     ]);
+  }
+
+  /// 프로젝트 설정 — 이름 수정 + 칩 순서 이동.
+  Future<void> _projectSettings(Project p) async {
+    final ctl = TextEditingController(text: p.name);
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: C.panel,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(6),
+            side: BorderSide(color: C.border)),
+        title: Text('프로젝트 설정',
+            style: mono(size: 15, color: C.txt, weight: FontWeight.w700)),
+        content: TextField(
+          controller: ctl,
+          autofocus: true,
+          maxLength: 30,
+          style: kr(size: 14),
+          decoration: inputDeco('이름').copyWith(counterText: ''),
+          onSubmitted: (_) => Navigator.pop(ctx, 'save'),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, 'left'),
+              child: Text('← 앞으로', style: mono(size: 13, color: C.dim))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, 'right'),
+              child: Text('뒤로 →', style: mono(size: 13, color: C.dim))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text('취소', style: mono(size: 13, color: C.dim))),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, 'save'),
+              child: Text('저장',
+                  style: mono(
+                      size: 13, color: C.accent, weight: FontWeight.w700))),
+        ],
+      ),
+    );
+    if (action == null || !mounted) return;
+    final n = ref.read(appProvider.notifier);
+    n.renameProject(p.id, ctl.text); // 이동하더라도 바꾼 이름은 살림
+    if (action == 'left') n.moveProject(p.id, -1);
+    if (action == 'right') n.moveProject(p.id, 1);
   }
 
   Future<void> _addProject() async {
@@ -117,7 +164,7 @@ class _SprintTabState extends ConsumerState<SprintTab> {
         backgroundColor: C.panel,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
-            side: const BorderSide(color: C.border)),
+            side: BorderSide(color: C.border)),
         title: Text('새 프로젝트',
             style: mono(size: 15, color: C.txt, weight: FontWeight.w700)),
         content: TextField(
@@ -147,6 +194,10 @@ class _SprintTabState extends ConsumerState<SprintTab> {
 
   /* ---------- 투두 목록 ---------- */
 
+  /// 완료 항목은 그룹 안에서 밑으로 가라앉음 (표시 순서만, 저장 순서는 유지).
+  List<Todo> _sink(Iterable<Todo> its) =>
+      [...its.where((t) => !t.done), ...its.where((t) => t.done)];
+
   List<Widget> _todoRows(AppState s, String active) {
     if (s.todos.isEmpty) {
       return [emptyBox(personaOf(s).emptySprint)];
@@ -167,12 +218,12 @@ class _SprintTabState extends ConsumerState<SprintTab> {
                 style: mono(size: 11, color: C.dimmer)),
           ]),
         ));
-        rows.addAll(its.map((t) => _todoItem(s, t)));
+        rows.addAll(_sink(its).map((t) => _todoItem(s, t)));
       }
     } else {
       final its = s.todos.where((t) => t.project == active).toList();
       if (its.isEmpty) return [emptyBox('이 프로젝트엔 커밋 없음')];
-      rows.addAll(its.map((t) => _todoItem(s, t)));
+      rows.addAll(_sink(its).map((t) => _todoItem(s, t)));
     }
     return rows;
   }
@@ -182,7 +233,7 @@ class _SprintTabState extends ConsumerState<SprintTab> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration:
-          const BoxDecoration(border: Border(top: BorderSide(color: C.line))),
+          BoxDecoration(border: Border(top: BorderSide(color: C.line))),
       child: Row(children: [
         // 체크박스 — CLI 투두 글리프 ☐/☒
         GestureDetector(
@@ -206,16 +257,24 @@ class _SprintTabState extends ConsumerState<SprintTab> {
         const SizedBox(width: 11),
         PDot(projectColor(s, t.project)),
         const SizedBox(width: 11),
+        // 텍스트 클릭 → 수정
         Expanded(
-          child: Text(
-            t.text,
-            style: kr(
-              size: 15,
-              color: t.done ? C.dim : C.txt,
-              height: 1.35,
-            ).copyWith(
-              decoration: t.done ? TextDecoration.lineThrough : null,
-              decorationColor: C.dimmer,
+          child: GestureDetector(
+            onTap: () => _editTodo(t),
+            behavior: HitTestBehavior.opaque,
+            child: MouseRegion(
+              cursor: SystemMouseCursors.text,
+              child: Text(
+                t.text,
+                style: kr(
+                  size: 15,
+                  color: t.done ? C.dim : C.txt,
+                  height: 1.35,
+                ).copyWith(
+                  decoration: t.done ? TextDecoration.lineThrough : null,
+                  decorationColor: C.dimmer,
+                ),
+              ),
             ),
           ),
         ),
@@ -230,18 +289,32 @@ class _SprintTabState extends ConsumerState<SprintTab> {
           ),
         ],
         const SizedBox(width: 8),
-        GestureDetector(
-          onTap: () => n.deleteTodo(t.id),
-          child: MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              child: Text('✕', style: mono(size: 13, color: C.dimmer)),
-            ),
-          ),
-        ),
+        // 순서 이동 — 완료 항목은 어차피 밑에 깔리므로 미완료만
+        if (!t.done) ...[
+          _miniBtn('↑', () => n.moveTodo(t.id, -1)),
+          _miniBtn('↓', () => n.moveTodo(t.id, 1)),
+        ],
+        _miniBtn('✕', () => n.deleteTodo(t.id)),
       ]),
     );
+  }
+
+  Widget _miniBtn(String glyph, VoidCallback onTap) => GestureDetector(
+        onTap: onTap,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            child: Text(glyph, style: mono(size: 13, color: C.dimmer)),
+          ),
+        ),
+      );
+
+  Future<void> _editTodo(Todo t) async {
+    final v = await promptText(context,
+        title: '커밋 수정', initial: t.text, hint: '내용', maxLength: 120);
+    if (v == null || !mounted) return;
+    ref.read(appProvider.notifier).editTodo(t.id, v);
   }
 
   /* ---------- 배포 버튼 ---------- */

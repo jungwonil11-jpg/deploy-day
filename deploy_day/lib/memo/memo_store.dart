@@ -15,6 +15,7 @@ class Memo {
   final String text;
   final double x, y, w, h;
   final bool open; // 현재 창으로 떠 있는지 (재시작 시 복원 기준)
+  final bool pinned; // 항상 위 고정 — 켰을 때만 topmost (일반 메모앱 관례)
 
   const Memo({
     required this.id,
@@ -24,9 +25,17 @@ class Memo {
     this.w = 320,
     this.h = 260,
     this.open = true,
+    this.pinned = false,
   });
 
-  Memo copyWith({String? text, double? x, double? y, double? w, double? h, bool? open}) =>
+  Memo copyWith(
+          {String? text,
+          double? x,
+          double? y,
+          double? w,
+          double? h,
+          bool? open,
+          bool? pinned}) =>
       Memo(
         id: id,
         text: text ?? this.text,
@@ -35,10 +44,19 @@ class Memo {
         w: w ?? this.w,
         h: h ?? this.h,
         open: open ?? this.open,
+        pinned: pinned ?? this.pinned,
       );
 
-  Map<String, dynamic> toJson() =>
-      {'id': id, 'text': text, 'x': x, 'y': y, 'w': w, 'h': h, 'open': open};
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'text': text,
+        'x': x,
+        'y': y,
+        'w': w,
+        'h': h,
+        'open': open,
+        'pinned': pinned,
+      };
 
   factory Memo.fromJson(Map<String, dynamic> j) => Memo(
         id: j['id'] as String,
@@ -48,6 +66,7 @@ class Memo {
         w: (j['w'] as num?)?.toDouble() ?? 320,
         h: (j['h'] as num?)?.toDouble() ?? 260,
         open: j['open'] as bool? ?? false,
+        pinned: j['pinned'] as bool? ?? false,
       );
 }
 
@@ -117,6 +136,8 @@ class MemoNotifier extends Notifier<List<Memo>> {
                   w: (a['w'] as num).toDouble(),
                   h: (a['h'] as num).toDouble(),
                 ));
+      case 'memoPin':
+        _update(id, (m) => m.copyWith(pinned: a['pinned'] == true));
       case 'memoClosed':
         _winByMemo.remove(id);
         _update(id, (m) => m.copyWith(open: false));
@@ -158,9 +179,25 @@ class MemoNotifier extends Notifier<List<Memo>> {
 
   Future<void> _spawn(Memo m) async {
     final c = await WindowController.create(WindowConfiguration(
-      arguments: jsonEncode({'mainId': _mainWindowId, 'memo': m.toJson()}),
+      arguments: jsonEncode({
+        'mainId': _mainWindowId,
+        'memo': m.toJson(),
+        'dark': ref.read(appProvider).dark, // 서브창 엔진은 팔레트를 따로 적용
+      }),
       hiddenAtLaunch: true,
     ));
     _winByMemo[m.id] = c.windowId;
+  }
+
+  /// 다크/라이트 전환을 떠 있는 포스트잇 전부에 전파.
+  Future<void> broadcastTheme(bool dark) async {
+    for (final wid in _winByMemo.values) {
+      try {
+        await WindowController.fromWindowId(wid)
+            .invokeMethod('memoTheme', jsonEncode({'dark': dark}));
+      } catch (_) {
+        // 닫히는 중인 창 등 — 무시
+      }
+    }
   }
 }

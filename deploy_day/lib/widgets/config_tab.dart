@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
 import '../legal.dart';
+import '../memo/memo_store.dart';
 import '../models.dart';
 import '../persona.dart';
 import '../theme.dart';
@@ -15,6 +16,16 @@ class ConfigTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final s = ref.watch(appProvider);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // ----- 테마 -----
+      CliBox(
+        title: 'theme · 다크/라이트',
+        child: Row(children: [
+          _themeBtn(context, ref, s, dark: true, label: 'dark', first: true),
+          Container(width: 1, height: 44, color: C.line),
+          _themeBtn(context, ref, s, dark: false, label: 'light', first: false),
+        ]),
+      ),
+      const SizedBox(height: 16),
       // ----- 페르소나 -----
       CliBox(
         title: 'persona · 앱 말투 변경',
@@ -22,6 +33,12 @@ class ConfigTab extends ConsumerWidget {
           for (var i = 0; i < kPersonas.length; i++)
             _personaRow(context, ref, s, kPersonas[i], first: i == 0),
         ]),
+      ),
+      const SizedBox(height: 16),
+      // ----- 사용법 -----
+      const CliBox(
+        title: 'manual · 사용법',
+        child: _LegalTile(title: '처음 왔으면 읽기 — 5분 사용법', body: kManual, first: true),
       ),
       const SizedBox(height: 16),
       // ----- 앱 소개 -----
@@ -50,6 +67,41 @@ class ConfigTab extends ConsumerWidget {
     ]);
   }
 
+  Widget _themeBtn(BuildContext context, WidgetRef ref, AppState s,
+      {required bool dark, required String label, required bool first}) {
+    final on = s.dark == dark;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (on) return;
+          ref.read(appProvider.notifier).setDark(dark);
+          // 떠 있는 포스트잇에도 즉시 반영
+          ref.read(memoProvider.notifier).broadcastTheme(dark);
+        },
+        behavior: HitTestBehavior.opaque,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            alignment: Alignment.center,
+            color: on ? C.panel2 : Colors.transparent,
+            child: Text.rich(TextSpan(children: [
+              TextSpan(
+                  text: on ? '◉ ' : '○ ',
+                  style: mono(size: 13, color: on ? C.accent : C.dimmer)),
+              TextSpan(
+                  text: label,
+                  style: mono(
+                      size: 13,
+                      color: on ? C.txt : C.dim,
+                      weight: on ? FontWeight.w700 : FontWeight.w400)),
+            ])),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _personaRow(BuildContext context, WidgetRef ref, AppState s,
       Persona p,
       {required bool first}) {
@@ -67,8 +119,7 @@ class ConfigTab extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           decoration: first
               ? null
-              : const BoxDecoration(
-                  border: Border(top: BorderSide(color: C.line))),
+              : BoxDecoration(border: Border(top: BorderSide(color: C.line))),
           child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Padding(
               padding: const EdgeInsets.only(top: 1),
@@ -127,8 +178,7 @@ class _LegalTileState extends State<_LegalTile> {
   Widget build(BuildContext context) => Container(
         decoration: widget.first
             ? null
-            : const BoxDecoration(
-                border: Border(top: BorderSide(color: C.line))),
+            : BoxDecoration(border: Border(top: BorderSide(color: C.line))),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           GestureDetector(
             onTap: () => setState(() => open = !open),

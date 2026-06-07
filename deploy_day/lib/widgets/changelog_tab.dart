@@ -139,8 +139,7 @@ class _ReleaseTileState extends State<_ReleaseTile> {
     return Container(
       decoration: widget.first
           ? null
-          : const BoxDecoration(
-              border: Border(top: BorderSide(color: C.line))),
+          : BoxDecoration(border: Border(top: BorderSide(color: C.line))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         GestureDetector(
           onTap: () => setState(() => open = !open),

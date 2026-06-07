@@ -57,8 +57,8 @@ class Project {
     this.done = false,
   });
 
-  Project copyWith({bool? done}) =>
-      Project(id: id, name: name, color: color, done: done ?? this.done);
+  Project copyWith({String? name, bool? done}) => Project(
+      id: id, name: name ?? this.name, color: color, done: done ?? this.done);
 
   Map<String, dynamic> toJson() =>
       {'id': id, 'name': name, 'color': color, 'done': done};
@@ -86,9 +86,9 @@ class Todo {
     this.project,
   });
 
-  Todo copyWith({bool? done}) => Todo(
+  Todo copyWith({String? text, bool? done}) => Todo(
       id: id,
-      text: text,
+      text: text ?? this.text,
       done: done ?? this.done,
       carried: carried,
       project: project);
@@ -187,6 +187,7 @@ class Release {
 class AppState {
   final String name; // 배포자 이름 — 첫 실행 때 입력받음
   final String persona; // 앱 말투 페르소나 id (persona.dart)
+  final bool dark; // 다크모드 (기본 on) — 메모 창에도 같이 적용
   final int shipDay; // 배포 요일 (DateTime.weekday, 기본 목요일)
   final int major;
   final int minor;
@@ -199,6 +200,7 @@ class AppState {
   const AppState({
     this.name = '',
     this.persona = 'victor',
+    this.dark = true,
     this.shipDay = DateTime.thursday,
     required this.major,
     required this.minor,
@@ -221,6 +223,7 @@ class AppState {
   AppState copyWith({
     String? name,
     String? persona,
+    bool? dark,
     int? shipDay,
     int? major,
     int? minor,
@@ -233,6 +236,7 @@ class AppState {
       AppState(
         name: name ?? this.name,
         persona: persona ?? this.persona,
+        dark: dark ?? this.dark,
         shipDay: shipDay ?? this.shipDay,
         major: major ?? this.major,
         minor: minor ?? this.minor,
@@ -261,6 +265,7 @@ class AppState {
   Map<String, dynamic> toJson() => {
         'name': name,
         'persona': persona,
+        'dark': dark,
         'shipDay': shipDay,
         'major': major,
         'minor': minor,
@@ -274,6 +279,7 @@ class AppState {
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
         name: (j['name'] ?? '') as String,
         persona: (j['persona'] ?? 'victor') as String,
+        dark: j['dark'] as bool? ?? true,
         shipDay: (j['shipDay'] ?? DateTime.thursday) as int,
         major: (j['major'] ?? 1) as int,
         minor: (j['minor'] ?? 0) as int,

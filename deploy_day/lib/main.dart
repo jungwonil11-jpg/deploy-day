@@ -24,16 +24,19 @@ Future<void> main(List<String> args) async {
   ));
 }
 
-class DeployDayApp extends StatelessWidget {
+class DeployDayApp extends ConsumerWidget {
   const DeployDayApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dark = ref.watch(appProvider.select((s) => s.dark));
+    applyPalette(dark: dark);
     return MaterialApp(
       title: 'DEPLOY DAY',
       debugShowCheckedModeBanner: false,
-      theme: buildTheme(),
-      home: const HomeScreen(),
+      theme: buildTheme(dark: dark),
+      // 색이 build 시점에 박히므로 토글 시 트리 전체 리마운트
+      home: KeyedSubtree(key: ValueKey(dark), child: const HomeScreen()),
     );
   }
 }

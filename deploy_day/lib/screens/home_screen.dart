@@ -58,7 +58,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           backgroundColor: C.panel,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(6),
-              side: const BorderSide(color: C.accent)),
+              side: BorderSide(color: C.accent)),
           title: Text.rich(TextSpan(children: [
             TextSpan(
                 text: '✻ ',
@@ -165,7 +165,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             minBlastForce: 8,
             emissionFrequency: 0.02,
             gravity: 0.25,
-            colors: const [
+            colors: [
               C.accent,
               C.accent2,
               C.ship,
@@ -280,7 +280,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: C.panel,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
-            side: const BorderSide(color: C.border)),
+            side: BorderSide(color: C.border)),
         offset: const Offset(0, 22),
         onSelected: (d) async {
           ref.read(appProvider.notifier).setShipDay(d);
