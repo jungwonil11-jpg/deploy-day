@@ -77,3 +77,48 @@ void startWindowDrag(int hwnd) {
 void postCloseWindow(int hwnd) {
   PostMessage(hwnd, WM_CLOSE, 0, 0);
 }
+
+/// 창이 놓인 모니터의 작업영역(작업표시줄 제외) — 가장자리 스냅 기준.
+({double l, double t, double r, double b})? getWorkArea(int hwnd) {
+  return using((arena) {
+    final mon = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
+    if (mon == 0) return null;
+    final mi = arena<MONITORINFO>();
+    mi.ref.cbSize = sizeOf<MONITORINFO>();
+    if (GetMonitorInfo(mon, mi) == 0) return null;
+    final w = mi.ref.rcWork;
+    return (
+      l: w.left.toDouble(),
+      t: w.top.toDouble(),
+      r: w.right.toDouble(),
+      b: w.bottom.toDouble(),
+    );
+  });
+}
+
+/// 같은 프로세스의 다른 메모 창들의 사각형 (자기 자신 제외) — 메모끼리 스냅용.
+List<({double l, double t, double r, double b})> siblingMemoRects(int selfHwnd) {
+  final out = <({double l, double t, double r, double b})>[];
+  using((arena) {
+    final cls = _subWindowClass.toNativeUtf16(allocator: arena);
+    final pidPtr = arena<Uint32>();
+    final myPid = GetCurrentProcessId();
+    var h = 0;
+    while (true) {
+      h = FindWindowEx(NULL, h, cls, nullptr);
+      if (h == 0) break;
+      if (h == selfHwnd) continue;
+      GetWindowThreadProcessId(h, pidPtr);
+      if (pidPtr.value != myPid) continue;
+      final r = arena<RECT>();
+      if (GetWindowRect(h, r) == 0) continue;
+      out.add((
+        l: r.ref.left.toDouble(),
+        t: r.ref.top.toDouble(),
+        r: r.ref.right.toDouble(),
+        b: r.ref.bottom.toDouble(),
+      ));
+    }
+  });
+  return out;
+}

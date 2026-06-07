@@ -94,13 +94,70 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     setWindowRect(_hwnd, _memo.x, _memo.y, _memo.w, _memo.h);
     if (_pinned) setTopmost(_hwnd, true); // 고정해뒀던 메모만 항상 위
     _lastRect = getWindowRect(_hwnd);
-    // 이동/리사이즈 추적 — 드래그 종료 훅이 없어서 폴링으로
-    _rectWatch = Timer.periodic(const Duration(seconds: 2), (_) {
+    // 이동/리사이즈 추적 — OS 드래그라 종료 훅이 없어서 폴링.
+    // (드래그 중엔 OS 모달 루프가 돌아 타이머가 안 뜀 → 끝난 직후 한 번에 잡힘)
+    _rectWatch = Timer.periodic(const Duration(milliseconds: 350), (_) {
       final r = getWindowRect(_hwnd);
       if (r == null || r == _lastRect) return;
-      _lastRect = r;
-      _send('memoRect', {'x': r.x, 'y': r.y, 'w': r.w, 'h': r.h});
+      // 드래그/리사이즈 끝남 — 가장자리·이웃 메모에 자석 스냅
+      final snapped = _snap(r);
+      if (snapped != null && (snapped.x != r.x || snapped.y != r.y)) {
+        setWindowRect(_hwnd, snapped.x, snapped.y, r.w, r.h);
+        final n = getWindowRect(_hwnd) ?? r;
+        _lastRect = n;
+        _send('memoRect', {'x': n.x, 'y': n.y, 'w': n.w, 'h': n.h});
+      } else {
+        _lastRect = r;
+        _send('memoRect', {'x': r.x, 'y': r.y, 'w': r.w, 'h': r.h});
+      }
     });
+  }
+
+  static const double _snapDist = 18; // 스냅 작동 거리(px)
+
+  /// 자석 스냅 — 화면 작업영역 가장자리(A) + 이웃 메모 모서리(B)에 붙임.
+  /// 가장 가까운 후보 하나로 x/y 각각 끌어당김. 후보 없으면 null.
+  ({double x, double y})? _snap(({double x, double y, double w, double h}) r) {
+    var x = r.x, y = r.y;
+    final right = r.x + r.w, bottom = r.y + r.h;
+
+    // 후보 수집: 가장 가까운 것만 채택 (스냅 거리 안쪽일 때만)
+    double? bestXTo; var bestXGap = _snapDist;
+    double? bestYTo; var bestYGap = _snapDist;
+    void considerX(double targetLeft, double dist) {
+      if (dist < bestXGap) { bestXGap = dist; bestXTo = targetLeft; }
+    }
+    void considerY(double targetTop, double dist) {
+      if (dist < bestYGap) { bestYGap = dist; bestYTo = targetTop; }
+    }
+
+    // A. 화면 작업영역 가장자리
+    final wa = getWorkArea(_hwnd);
+    if (wa != null) {
+      considerX(wa.l, (x - wa.l).abs()); // 왼끝에 left 붙임
+      considerX(wa.r - r.w, (right - wa.r).abs()); // 오른끝에 right 붙임
+      considerY(wa.t, (y - wa.t).abs());
+      considerY(wa.b - r.h, (bottom - wa.b).abs());
+    }
+
+    // B. 이웃 메모 — 마주보는 모서리끼리 붙임 + 같은 변 정렬
+    for (final s in siblingMemoRects(_hwnd)) {
+      // 내 left ↔ 이웃 right (옆에 딱), 내 right ↔ 이웃 left
+      considerX(s.r, (x - s.r).abs());
+      considerX(s.l - r.w, (right - s.l).abs());
+      considerX(s.l, (x - s.l).abs()); // 왼변 정렬
+      considerX(s.r - r.w, (right - s.r).abs()); // 오른변 정렬
+      // 세로도 동일
+      considerY(s.b, (y - s.b).abs());
+      considerY(s.t - r.h, (bottom - s.t).abs());
+      considerY(s.t, (y - s.t).abs());
+      considerY(s.b - r.h, (bottom - s.b).abs());
+    }
+
+    if (bestXTo != null) x = bestXTo!;
+    if (bestYTo != null) y = bestYTo!;
+    if (x == r.x && y == r.y) return null;
+    return (x: x, y: y);
   }
 
   void _send(String method, Map<String, dynamic> args) {
