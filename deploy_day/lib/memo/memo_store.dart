@@ -132,8 +132,11 @@ class MemoNotifier extends Notifier<List<Memo>> {
     // 넉넉히 미뤄서 회피.
     await WidgetsBinding.instance.endOfFrame;
     await Future<void>.delayed(const Duration(seconds: 2));
+    // 여러 메모를 한꺼번에 띄우면 서브창 엔진들이 동시에 warm-up 프레임을 돌며
+    // SetWindowPos 재진입으로 죽으므로, 하나씩 간격을 두고 순차 복원.
     for (final m in state.where((m) => m.open)) {
       await _spawn(m);
+      await Future<void>.delayed(const Duration(milliseconds: 600));
     }
   }
 

@@ -56,9 +56,13 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     super.initState();
     // 메인 창의 다크/라이트 설정을 이 엔진 팔레트에도 적용
     applyPalette(dark: _args['dark'] as bool? ?? true);
-    // SetWindowPos(SWP_FRAMECHANGED)가 빌드 중 메트릭 변경을 동기로 쏘면
-    // 첫 프레임이 깨지며 엔진이 죽으므로, 창 스타일링은 첫 프레임 이후로 미룸.
-    WidgetsBinding.instance.addPostFrameCallback((_) => _setupWindow());
+    // makeStickyStyle의 SetWindowPos(SWP_FRAMECHANGED)가 warm-up 프레임
+    // 콜스택 안에서 실행되면 재진입 WM_PAINT로 엔진 raster가 깨져 프로세스가
+    // 통째 죽음(특히 시작 시 여러 메모 동시 복원). postFrameCallback도 warm-up
+    // 프레임 안에서 도므로 부족 → 첫 프레임 완료 후 이벤트 루프 한 턴 뒤로 뺌.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 150), _setupWindow);
+    });
   }
 
   @override

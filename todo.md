@@ -9,10 +9,11 @@
 
 ## 🚨 최우선 — 출시 블로커
 
-- [ ] **메모 복원 크래시 (반드시 먼저)** — 열린 메모(`open:true`)를 띄워둔 채
-      앱 재시작하면 `SetWindowPos`(makeStickyStyle)에서 flaky crash로 앱 통째 종료.
-      현재는 prefs에서 open 강제로 끄는 우회만 됨. 멀티윈도우 warm-up 프레임 레이스가
-      근본 원인. 사용자 PC에서 터지면 리뷰 박살 → **MS Store 출시 전 무조건 해결.**
+- [x] **메모 복원 크래시** — 해결 (2026-06-07). 원인: makeStickyStyle의
+      `SetWindowPos(SWP_FRAMECHANGED)`가 서브창 warm-up 프레임 콜스택 안에서
+      실행돼 재진입 WM_PAINT로 엔진 raster가 깨짐. 시작 시 여러 메모 동시 복원이
+      트리거. 수정: ①서브창 `_setupWindow`를 postFrame 후 150ms 더 지연(이벤트
+      루프 다음 턴) ②메인 복원 스폰을 600ms 간격 순차화. 메모 4장 복원 검증 완료.
 
 ---
 
