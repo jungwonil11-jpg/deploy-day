@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'app_state.dart';
+import 'desktop_shell.dart';
 import 'models.dart';
 import 'persona.dart';
 import 'theme.dart';
@@ -17,28 +18,32 @@ final tutKeyTabs = GlobalKey(); // 탭 행
 /* ---------- 단계 정의 ---------- */
 
 /// 한 단계 — clearWhen이 있으면 "직접 해보기"(상태 변화로 자동 진행),
-/// 없으면 설명만 하고 [다음] 버튼으로 진행.
+/// 없으면 설명만 하고 [다음] 버튼으로 진행. key는 페르소나 문구 매칭용.
 class TutStep {
+  final String key;
   final GlobalKey? target;
   final bool Function(AppState prev, AppState next)? clearWhen;
-  const TutStep({this.target, this.clearWhen});
+  const TutStep(this.key, {this.target, this.clearWhen});
 }
 
 int _doneN(AppState s) => s.todos.where((t) => t.done).length;
 
-final kTutSteps = [
-  TutStep(
-      target: tutKeyAddProject,
-      clearWhen: (a, b) => b.projects.length > a.projects.length),
-  TutStep(
-      target: tutKeyAddRow,
-      clearWhen: (a, b) => b.todos.length > a.todos.length),
-  TutStep(
-      target: tutKeyFirstTodo, clearWhen: (a, b) => _doneN(b) > _doneN(a)),
-  TutStep(target: tutKeyShip),
-  TutStep(target: tutKeyTabs),
-  const TutStep(), // 마무리 — 타겟 없이 중앙 풍선
-];
+/// 현재 단계 목록 — 메모는 데스크탑에서만 들어감.
+List<TutStep> tutSteps() => [
+      TutStep('project',
+          target: tutKeyAddProject,
+          clearWhen: (a, b) => b.projects.length > a.projects.length),
+      TutStep('commit',
+          target: tutKeyAddRow,
+          clearWhen: (a, b) => b.todos.length > a.todos.length),
+      TutStep('check',
+          target: tutKeyFirstTodo,
+          clearWhen: (a, b) => _doneN(b) > _doneN(a)),
+      TutStep('ship', target: tutKeyShip),
+      if (isDesktopShell) TutStep('memo', target: tutKeyTabs),
+      TutStep('tabs', target: tutKeyTabs),
+      const TutStep('done'), // 마무리 — 타겟 없이 중앙 풍선
+    ];
 
 /* ---------- 진행 상태 ---------- */
 
@@ -50,18 +55,40 @@ class TutorialNotifier extends Notifier<int?> {
   @override
   int? build() => null;
 
+  /// 단계 진입 시 적절한 탭으로 전환 — memo 단계는 /memo 탭을 직접 보여줌.
+  void _syncTab(int step) {
+    final steps = tutSteps();
+    if (step >= steps.length) return;
+    // /sprint=0, /backlog=1, /changelog=2, (/memo=3 데스크탑), /config=마지막
+    final tab = switch (steps[step].key) {
+      'memo' => 3,
+      _ => 0,
+    };
+    ref.read(tabProvider.notifier).set(tab);
+  }
+
   void start() {
-    ref.read(tabProvider.notifier).set(0); // 튜토리얼은 /sprint 에서 시작
+    _syncTab(0);
     state = 0;
   }
 
   void next() {
     final s = state;
     if (s == null) return;
-    state = (s + 1 >= kTutSteps.length) ? null : s + 1;
+    final nx = s + 1;
+    if (nx >= tutSteps().length) {
+      state = null;
+      ref.read(tabProvider.notifier).set(0); // 끝나면 /sprint 로 복귀
+      return;
+    }
+    _syncTab(nx);
+    state = nx;
   }
 
-  void stop() => state = null;
+  void stop() {
+    state = null;
+    ref.read(tabProvider.notifier).set(0);
+  }
 }
 
 /* ---------- 오버레이 ---------- */
@@ -82,7 +109,9 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
   /// 단계 바뀌면: 타겟이 보이게 스크롤 → 자리 잡힌 뒤 rect 측정.
   Future<void> _measure(int step) async {
     _measuredStep = step;
-    final key = kTutSteps[step].target;
+    final steps = tutSteps();
+    if (step >= steps.length) return;
+    final key = steps[step].target;
     if (key == null) {
       if (mounted) setState(() => _hole = null);
       return;
@@ -112,7 +141,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
     ref.listen(appProvider, (prev, next) {
       final i = ref.read(tutorialProvider);
       if (i == null || prev == null) return;
-      final c = kTutSteps[i].clearWhen;
+      final c = tutSteps()[i].clearWhen;
       if (c != null && c(prev, next)) {
         Future.delayed(const Duration(milliseconds: 700), () {
           if (mounted && ref.read(tutorialProvider) == i) {
@@ -135,7 +164,9 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
     final size = MediaQuery.sizeOf(context);
     final s = ref.watch(appProvider);
     final p = personaOf(s);
-    final manual = kTutSteps[step].clearWhen == null;
+    final steps = tutSteps();
+    final cur = steps[step];
+    final manual = cur.clearWhen == null;
     final hole = _hole?.inflate(6);
 
     return Stack(children: [
@@ -162,7 +193,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
           ),
         ),
       // 말풍선 — 타겟이 화면 위쪽이면 아래에, 아래쪽이면 위에
-      _bubble(size, hole, step, p, manual),
+      _bubble(size, hole, step, steps, cur, p, manual),
     ]);
   }
 
@@ -177,10 +208,12 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
     ];
   }
 
-  Widget _bubble(Size size, Rect? hole, int step, Persona p, bool manual) {
+  Widget _bubble(Size size, Rect? hole, int step, List<TutStep> steps,
+      TutStep cur, Persona p, bool manual) {
     final below = hole == null || hole.center.dy < size.height / 2;
     final width = (size.width - 48).clamp(200.0, 460.0);
     final n = ref.read(tutorialProvider.notifier);
+    final last = step + 1 >= steps.length;
 
     final box = Container(
       width: width,
@@ -194,10 +227,10 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('tutorial · ${step + 1}/${kTutSteps.length}',
+            Text('tutorial · ${step + 1}/${steps.length}',
                 style: mono(size: 11, color: C.accent)),
             const SizedBox(height: 8),
-            Text(p.tutorial[step], style: kr(size: 14, height: 1.6)),
+            Text(p.tutorial[cur.key] ?? '', style: kr(size: 14, height: 1.6)),
             const SizedBox(height: 10),
             Row(children: [
               GestureDetector(
@@ -219,8 +252,7 @@ class _TutorialOverlayState extends ConsumerState<TutorialOverlay> {
                       decoration: BoxDecoration(
                           color: C.accent,
                           borderRadius: BorderRadius.circular(5)),
-                      child: Text(
-                          step + 1 >= kTutSteps.length ? '⏵⏵ 시작' : '다음 →',
+                      child: Text(last ? '⏵⏵ 시작' : '다음 →',
                           style: mono(
                               size: 12,
                               color: C.bg,

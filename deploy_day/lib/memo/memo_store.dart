@@ -9,6 +9,17 @@ import '../app_state.dart';
 import '../desktop_shell.dart';
 import '../models.dart';
 
+/// 메모 색 팔레트 — 터미널 톤 포스트잇 6색 (accent 글리프 + 잉크색).
+/// (배경, 잉크) 쌍 — 본문은 어두운 면에 밝은 글씨 (CLI 감성 유지).
+const kMemoColors = [
+  (0xFF1A1A1A, 0xFFECECEC), // 기본 차콜
+  (0xFF2A1C16, 0xFFE8B79E), // 오렌지
+  (0xFF15241A, 0xFF9EE0B0), // 그린
+  (0xFF1A2230, 0xFF9EC9F0), // 블루
+  (0xFF2A1620, 0xFFF0A0C8), // 핑크
+  (0xFF2A2410, 0xFFE8D08A), // 옐로
+];
+
 /// 바탕화면 포스트잇 메모 한 장.
 class Memo {
   final String id;
@@ -16,6 +27,7 @@ class Memo {
   final double x, y, w, h;
   final bool open; // 현재 창으로 떠 있는지 (재시작 시 복원 기준)
   final bool pinned; // 항상 위 고정 — 켰을 때만 topmost (일반 메모앱 관례)
+  final int color; // kMemoColors 인덱스
 
   const Memo({
     required this.id,
@@ -26,6 +38,7 @@ class Memo {
     this.h = 260,
     this.open = true,
     this.pinned = false,
+    this.color = 0,
   });
 
   Memo copyWith(
@@ -35,7 +48,8 @@ class Memo {
           double? w,
           double? h,
           bool? open,
-          bool? pinned}) =>
+          bool? pinned,
+          int? color}) =>
       Memo(
         id: id,
         text: text ?? this.text,
@@ -45,6 +59,7 @@ class Memo {
         h: h ?? this.h,
         open: open ?? this.open,
         pinned: pinned ?? this.pinned,
+        color: color ?? this.color,
       );
 
   Map<String, dynamic> toJson() => {
@@ -56,6 +71,7 @@ class Memo {
         'h': h,
         'open': open,
         'pinned': pinned,
+        'color': color,
       };
 
   factory Memo.fromJson(Map<String, dynamic> j) => Memo(
@@ -67,6 +83,7 @@ class Memo {
         h: (j['h'] as num?)?.toDouble() ?? 260,
         open: j['open'] as bool? ?? false,
         pinned: j['pinned'] as bool? ?? false,
+        color: (j['color'] as num?)?.toInt() ?? 0,
       );
 }
 
@@ -138,6 +155,11 @@ class MemoNotifier extends Notifier<List<Memo>> {
                 ));
       case 'memoPin':
         _update(id, (m) => m.copyWith(pinned: a['pinned'] == true));
+      case 'memoColor':
+        _update(id, (m) => m.copyWith(color: (a['color'] as num).toInt()));
+      case 'memoToCommit':
+        // 서브창이 "→ 커밋" 누름 — 본문을 미분류 커밋으로 승격
+        ref.read(appProvider.notifier).addTodo(a['text'] as String);
       case 'memoClosed':
         _winByMemo.remove(id);
         _update(id, (m) => m.copyWith(open: false));

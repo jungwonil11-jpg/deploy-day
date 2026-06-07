@@ -45,6 +45,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
   late final TextEditingController _text =
       TextEditingController(text: _memo.text);
   late bool _pinned = _memo.pinned;
+  late int _color = _memo.color;
   int _hwnd = 0;
   Timer? _debounce;
   Timer? _rectWatch;
@@ -124,96 +125,104 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     postCloseWindow(_hwnd);
   }
 
+  void _cycleColor() {
+    setState(() => _color = (_color + 1) % kMemoColors.length);
+    _send('memoColor', {'color': _color});
+  }
+
+  void _toCommit() {
+    final t = _text.text.trim();
+    if (t.isEmpty) return;
+    _send('memoText', {'text': _text.text});
+    _send('memoToCommit', {'text': t});
+  }
+
   @override
-  Widget build(BuildContext context) => MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          brightness: Brightness.dark,
-          scaffoldBackgroundColor: C.bg,
-          textSelectionTheme:
-              TextSelectionThemeData(cursorColor: C.accent),
-        ),
-        home: Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              color: C.panel,
-              border: Border.all(color: C.border),
-            ),
-            child: Column(children: [
-              // 드래그 핸들 — 미니 터미널 타이틀바
-              GestureDetector(
-                onPanStart: (_) => startWindowDrag(_hwnd),
-                child: Container(
-                  height: 30,
-                  color: C.panel2,
-                  padding: const EdgeInsets.symmetric(horizontal: 10),
-                  child: Row(children: [
-                    Text('✻',
-                        style: _memoStyle(
-                            size: 12,
-                            color: C.accent,
-                            weight: FontWeight.w700)),
-                    const SizedBox(width: 6),
-                    Text('memo',
-                        style: _memoStyle(size: 12, color: C.dim)),
-                    const Spacer(),
-                    // 항상 위 토글 — 켰을 때만 topmost
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () {
-                          setState(() => _pinned = !_pinned);
-                          setTopmost(_hwnd, _pinned);
-                          _send('memoPin', {'pinned': _pinned});
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 4),
-                          child: Text('[pin${_pinned ? ' ●' : ''}]',
-                              style: _memoStyle(
-                                  size: 11,
-                                  color: _pinned ? C.accent : C.dimmer)),
-                        ),
-                      ),
-                    ),
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: _close,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 4),
-                          child: Text('✕',
-                              style:
-                                  _memoStyle(size: 13, color: C.dimmer)),
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
+  Widget build(BuildContext context) {
+    final (bgHex, inkHex) = kMemoColors[_color.clamp(0, kMemoColors.length - 1)];
+    final bg = Color(bgHex);
+    final ink = Color(inkHex);
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: bg,
+        textSelectionTheme: TextSelectionThemeData(cursorColor: C.accent),
+      ),
+      home: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            color: bg,
+            border: Border.all(color: C.border),
+          ),
+          child: Column(children: [
+            // 드래그 핸들 — 미니 터미널 타이틀바
+            GestureDetector(
+              onPanStart: (_) => startWindowDrag(_hwnd),
+              child: Container(
+                height: 30,
+                color: Colors.white.withValues(alpha: .05),
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(children: [
+                  Text('✻',
+                      style: _memoStyle(
+                          size: 12, color: C.accent, weight: FontWeight.w700)),
+                  const SizedBox(width: 6),
+                  Text('memo', style: _memoStyle(size: 12, color: ink)),
+                  const Spacer(),
+                  // 색 변경 — 다음 색으로 순환
+                  _barBtn('◑', _cycleColor, ink, '색 변경'),
+                  // 메모 → 스프린트 커밋으로 승격
+                  _barBtn('→commit', _toCommit, ink, '커밋으로 보내기'),
+                  // 항상 위 토글 — 켰을 때만 topmost
+                  _barBtn('[pin${_pinned ? ' ●' : ''}]', () {
+                    setState(() => _pinned = !_pinned);
+                    setTopmost(_hwnd, _pinned);
+                    _send('memoPin', {'pinned': _pinned});
+                  }, _pinned ? C.accent : ink.withValues(alpha: .55), '항상 위'),
+                  _barBtn('✕', _close, ink.withValues(alpha: .55), '닫기'),
+                ]),
               ),
-              Divider(height: 1, thickness: 1, color: C.line),
-              // 메모 본문
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                  child: TextField(
-                    controller: _text,
-                    onChanged: _onChanged,
-                    maxLines: null,
-                    expands: true,
-                    autofocus: true,
-                    style: _memoStyle(size: 13.5),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      isDense: true,
-                      hintText: '> 메모...',
-                      hintStyle: _memoStyle(size: 13.5, color: C.dimmer),
-                    ),
+            ),
+            Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: .08)),
+            // 메모 본문
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: TextField(
+                  controller: _text,
+                  onChanged: _onChanged,
+                  maxLines: null,
+                  expands: true,
+                  autofocus: true,
+                  style: _memoStyle(size: 13.5, color: ink),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    isDense: true,
+                    hintText: '> 메모...',
+                    hintStyle:
+                        _memoStyle(size: 13.5, color: ink.withValues(alpha: .4)),
                   ),
                 ),
               ),
-            ]),
+            ),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _barBtn(String label, VoidCallback onTap, Color color, String tip) =>
+      MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Tooltip(
+          message: tip,
+          child: GestureDetector(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
+              child: Text(label, style: _memoStyle(size: 11, color: color)),
+            ),
           ),
         ),
       );
