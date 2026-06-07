@@ -52,6 +52,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
   Timer? _rectWatch;
   Timer? _anim; // 스냅 슬라이드 애니메이션
   bool _animating = false;
+  bool _wasDown = false; // 직전 폴링 때 마우스 버튼 눌림 상태 (드래그 종료 감지)
   ({double x, double y, double w, double h})? _lastRect;
 
   @override
@@ -100,15 +101,34 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     _lastRect = getWindowRect(_hwnd);
     // 이동/리사이즈 추적 — OS 드래그라 종료 훅이 없어서 폴링.
     // (드래그 중엔 OS 모달 루프가 돌아 타이머가 안 뜀 → 끝난 직후 한 번에 잡힘)
-    _rectWatch = Timer.periodic(const Duration(milliseconds: 350), (_) {
-      if (_animating) return; // 슬라이드 중엔 폴링 무시 (자기 이동을 드래그로 오인 X)
+    // 더 촘촘히(120ms) 폴링하되, 스냅은 "마우스 버튼을 뗀 순간"에만.
+    // 드래그 중(버튼 눌림)엔 OS가 위치를 잡고 있으므로 절대 건드리지 않음
+    // — 안 그러면 setWindowRect가 OS 이동과 싸워서 창이 튐.
+    _rectWatch = Timer.periodic(const Duration(milliseconds: 120), (_) {
+      if (_animating) return; // 슬라이드 중엔 무시 (자기 이동을 드래그로 오인 X)
       final r = getWindowRect(_hwnd);
-      if (r == null || r == _lastRect) return;
-      // 드래그/리사이즈 끝남 — 가장자리·이웃 메모에 자석 스냅
+      if (r == null) return;
+      final down = isLeftMouseDown();
+      final moved = r != _lastRect;
+
+      if (down) {
+        // 드래그 중 — 위치만 추적/저장, 스냅은 안 함
+        if (moved) {
+          _lastRect = r;
+          _send('memoRect', {'x': r.x, 'y': r.y, 'w': r.w, 'h': r.h});
+        }
+        _wasDown = true;
+        return;
+      }
+      // 버튼 뗌 — 방금 드래그가 끝났거나(=_wasDown) 위치가 바뀐 채 멈춤
+      final justReleased = _wasDown;
+      _wasDown = false;
+      if (!moved && !justReleased) return;
+
       final snapped = _snap(r);
       if (snapped != null && (snapped.x != r.x || snapped.y != r.y)) {
         _animateSnapTo(r, snapped.x, snapped.y); // 자석에 미끄러지듯
-      } else {
+      } else if (moved) {
         _lastRect = r;
         _send('memoRect', {'x': r.x, 'y': r.y, 'w': r.w, 'h': r.h});
       }

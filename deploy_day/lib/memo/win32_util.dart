@@ -78,6 +78,10 @@ void postCloseWindow(int hwnd) {
   PostMessage(hwnd, WM_CLOSE, 0, 0);
 }
 
+/// 마우스 왼쪽 버튼이 지금 눌려 있는지 — 드래그 진행 중 판별용.
+/// (OS가 드래그를 처리하므로 onPanEnd가 안 떠서 버튼 상태로 종료를 감지)
+bool isLeftMouseDown() => GetAsyncKeyState(VK_LBUTTON) & 0x8000 != 0;
+
 /// 창이 놓인 모니터의 작업영역(작업표시줄 제외) — 가장자리 스냅 기준.
 ({double l, double t, double r, double b})? getWorkArea(int hwnd) {
   return using((arena) {
