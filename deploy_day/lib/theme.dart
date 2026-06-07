@@ -3,18 +3,22 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'models.dart';
 
-/// Claude Code CLI 팔레트 — 웜 다크 + Claude 오렌지.
+/// Claude Code CLI 팔레트 — 터미널 블랙 + Claude 오렌지.
+/// 실제 Claude Code 스크린샷에서 뽑은 색. 박스는 채움 없이 선만 (터미널 감성).
 abstract final class C {
-  static const bg = Color(0xFF0E0D0C);
-  static const panel = Color(0xFF141312);
-  static const panel2 = Color(0xFF1C1A18);
-  static const border = Color(0xFF3E3A34);
-  static const line = Color(0xFF262320);
-  static const txt = Color(0xFFECEAE5);
-  static const dim = Color(0xFF9D9588);
-  static const dimmer = Color(0xFF5C564C);
+  static const bg = Color(0xFF0C0C0C); // Windows Terminal 블랙
+  static const panel = Color(0xFF111111); // 다이얼로그·토스트 등 떠있는 면만
+  static const panel2 = Color(0xFF1A1A1A);
+  static const border = Color(0xFF3A3A3A);
+  static const line = Color(0xFF262626);
+  static const txt = Color(0xFFECECEC);
+  static const dim = Color(0xFF999999);
+  static const dimmer = Color(0xFF5C5C5C);
   static const accent = Color(0xFFD97757); // Claude orange
   static const accent2 = Color(0xFFC15F3C); // crail (진한 오렌지)
+  static const blue = Color(0xFF4FA3E8); // status line 모델명 블루
+  static const pink = Color(0xFFE5549F); // ⏵⏵ bypass permissions 핑크
+  static const magenta = Color(0xFFCC66CC); // 브랜치명 마젠타
   static const ship = Color(0xFF5DBE74); // 터미널 그린
   static const warn = Color(0xFFD9A33C); // 터미널 옐로
   static const rollback = Color(0xFFE25D56); // 터미널 레드
@@ -36,13 +40,15 @@ TextStyle mono({
   FontWeight weight = FontWeight.w400,
   double? spacing,
   double? height,
+  bool italic = false,
 }) =>
     GoogleFonts.jetBrainsMono(
         fontSize: size,
         color: color,
         fontWeight: weight,
         letterSpacing: spacing,
-        height: height);
+        height: height,
+        fontStyle: italic ? FontStyle.italic : FontStyle.normal);
 
 /// Nanum Gothic Coding — 한글도 고정폭으로 (풀 터미널 감성).
 TextStyle kr({
@@ -125,15 +131,16 @@ class PDot extends StatelessWidget {
 }
 
 /// CLI 박스 — ╭─ 제목 ─╮ 처럼 테두리 위에 제목이 박힌 박스.
+/// 터미널처럼 채움 없이 선만. 제목 색은 기본적으로 테두리 색 따라감.
 class CliBox extends StatelessWidget {
   final String? title;
   final Color borderColor;
-  final Color titleColor;
+  final Color? titleColor;
   final Widget child;
   const CliBox({
     this.title,
-    this.borderColor = C.line,
-    this.titleColor = C.dim,
+    this.borderColor = C.border,
+    this.titleColor,
     required this.child,
     super.key,
   });
@@ -147,7 +154,6 @@ class CliBox extends StatelessWidget {
             margin: title != null ? const EdgeInsets.only(top: 8) : null,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              color: C.panel,
               border: Border.all(color: borderColor),
               borderRadius: BorderRadius.circular(6),
             ),
@@ -160,16 +166,16 @@ class CliBox extends StatelessWidget {
               child: Container(
                 color: C.bg, // 테두리를 끊고 제목이 올라앉음
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Text(title!, style: mono(size: 11, color: titleColor)),
+                child: Text(title!,
+                    style: mono(size: 11, color: titleColor ?? borderColor)),
               ),
             ),
         ],
       );
 }
 
-/// 패널 박스 — CLI 박스 직사각 (제목 없는 곳용).
+/// 패널 박스 — CLI 박스 직사각 (제목 없는 곳용). 채움 없이 선만.
 BoxDecoration panelDeco({double radius = 6}) => BoxDecoration(
-      color: C.panel,
       border: Border.all(color: C.line),
       borderRadius: BorderRadius.circular(radius),
     );
@@ -205,7 +211,7 @@ InputDecoration inputDeco(String hint) => InputDecoration(
           borderSide: const BorderSide(color: C.accent)),
     );
 
-/// `> ` 프롬프트 입력 행 — Claude Code 입력창 대응.
+/// `❯ ` 프롬프트 입력 행 — Claude Code 입력창 그대로 (박스 없이 ❯ + 이탤릭 힌트).
 Widget addRow({
   required TextEditingController controller,
   required FocusNode focusNode,
@@ -214,21 +220,25 @@ Widget addRow({
   required VoidCallback onAdd,
 }) =>
     Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
           border: Border(bottom: BorderSide(color: C.line))),
       child: Row(children: [
+        Text('❯ ',
+            style: mono(size: 15, color: C.accent, weight: FontWeight.w700)),
         Expanded(
           child: TextField(
             controller: controller,
             focusNode: focusNode,
             maxLength: 120,
             style: kr(size: 15),
-            decoration: inputDeco(hint).copyWith(
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: kr(size: 14, color: C.dimmer),
+              border: InputBorder.none,
+              isDense: true,
               counterText: '',
-              prefixText: '> ',
-              prefixStyle: mono(
-                  size: 15, color: C.accent, weight: FontWeight.w700),
+              contentPadding: const EdgeInsets.symmetric(vertical: 10),
             ),
             onSubmitted: (_) {
               onAdd();
@@ -241,16 +251,10 @@ Widget addRow({
           onTap: onAdd,
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
-            child: Container(
-              height: 46,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                  color: C.panel2,
-                  border: Border.all(color: C.border),
-                  borderRadius: BorderRadius.circular(5)),
-              child: Text('⏎ $button',
-                  style: mono(size: 12, color: C.dim)),
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+              child: Text('⏎ $button', style: mono(size: 12, color: C.dimmer)),
             ),
           ),
         ),

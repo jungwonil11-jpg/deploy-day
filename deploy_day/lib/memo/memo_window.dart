@@ -52,7 +52,9 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
   @override
   void initState() {
     super.initState();
-    _setupWindow();
+    // SetWindowPos(SWP_FRAMECHANGED)가 빌드 중 메트릭 변경을 동기로 쏘면
+    // 첫 프레임이 깨지며 엔진이 죽으므로, 창 스타일링은 첫 프레임 이후로 미룸.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _setupWindow());
   }
 
   @override

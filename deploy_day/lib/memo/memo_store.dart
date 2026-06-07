@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:desktop_multi_window/desktop_multi_window.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
@@ -89,6 +90,10 @@ class MemoNotifier extends Notifier<List<Memo>> {
     final me = await WindowController.fromCurrentEngine();
     _mainWindowId = me.windowId;
     await me.setWindowMethodHandler(_onMessage);
+    // 메인 엔진 첫 프레임 전에 서브창을 스폰하면 flutter_windows.dll에서
+    // access violation(0xc0000005)으로 프로세스가 통째로 죽음 — 프레임 이후로 미룸.
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(const Duration(milliseconds: 300));
     for (final m in state.where((m) => m.open)) {
       await _spawn(m);
     }

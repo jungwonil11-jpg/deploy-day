@@ -60,33 +60,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 760),
-              child: Column(children: [
-                Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _topbar()),
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _header(s),
-                        _alertBar(s),
-                        const SizedBox(height: 26),
-                        _tabs(s),
-                        const SizedBox(height: 16),
-                        switch (tab) {
-                          0 => SprintTab(confetti: _confetti),
-                          1 => const BacklogTab(),
-                          2 => const ChangelogTab(),
-                          _ => const MemoTab(),
-                        },
-                        _tools(),
-                      ],
-                    ),
-                  ),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _topbar(s),
+                    _announce(s),
+                    const SizedBox(height: 28),
+                    _tabs(s),
+                    const SizedBox(height: 16),
+                    switch (tab) {
+                      0 => SprintTab(confetti: _confetti),
+                      1 => const BacklogTab(),
+                      2 => const ChangelogTab(),
+                      _ => const MemoTab(),
+                    },
+                    _tools(),
+                  ],
                 ),
-              ]),
+              ),
             ),
           ),
         ),
@@ -116,54 +109,128 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  /// ✻ 웰컴 박스 — Claude Code 시작 배너 대응.
-  Widget _topbar() => Padding(
-        padding: const EdgeInsets.only(top: 14),
-        child: CliBox(
-          borderColor: C.border,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text.rich(TextSpan(children: [
-                TextSpan(
-                    text: '✻ ',
-                    style: mono(
-                        size: 14, color: C.accent, weight: FontWeight.w700)),
-                TextSpan(
-                    text: 'Welcome to deploy-day!',
-                    style: mono(
-                        size: 14, color: C.txt, weight: FontWeight.w700)),
-              ])),
-              const SizedBox(height: 8),
-              Row(children: [
-                Text('  cwd: ~/life', style: mono(color: C.dimmer)),
-                const SizedBox(width: 14),
-                Text('\$ deploy --every thursday', style: mono()),
-                const Spacer(),
-                Text('● LIVE', style: mono(color: C.ship, spacing: .5)),
-                if (isDesktopShell) ...[
-                  const SizedBox(width: 12),
-                  // 항상 위 고정 토글
-                  ValueListenableBuilder<bool>(
-                    valueListenable: pinned,
-                    builder: (_, on, _) => GestureDetector(
-                      onTap: togglePin,
-                      child: MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: Text('[pin${on ? ' ●' : ''}]',
-                            style: mono(color: on ? C.accent : C.dimmer)),
-                      ),
-                    ),
-                  ),
-                ],
+  /// Claude Code 시작 배너 — 오렌지 박스 좌(웰컴+픽셀 로고)/우(Tips·What's new) 2단.
+  Widget _topbar(AppState s) {
+    final recent = s.releases.reversed.take(3).toList();
+    return Padding(
+      padding: const EdgeInsets.only(top: 22),
+      child: CliBox(
+        title: 'deploy-day v${s.major}.${s.minor}',
+        borderColor: C.accent,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            // 좌측 — 환영 인사 + 픽셀 Clawd
+            Expanded(
+              flex: 5,
+              child: Column(children: [
+                const SizedBox(height: 4),
+                Text('Welcome back Victor!',
+                    style:
+                        mono(size: 14, color: C.txt, weight: FontWeight.w700)),
+                const SizedBox(height: 16),
+                Text(' ▐▛███▜▌\n▝▜█████▛▘\n  ▘▘ ▝▝',
+                    textAlign: TextAlign.center,
+                    style: mono(size: 15, color: C.accent, height: 1.05)),
+                const SizedBox(height: 16),
+                Text('인생 배포 (1주 cycle) · 매주 목요일',
+                    style: mono(size: 12, color: C.dim)),
+                const SizedBox(height: 4),
+                Text.rich(TextSpan(style: mono(size: 12), children: [
+                  TextSpan(text: 'streak ${s.streak}주'),
+                  const TextSpan(text: ' · '),
+                  TextSpan(text: '● LIVE', style: mono(size: 12, color: C.ship)),
+                ])),
+                const SizedBox(height: 4),
+                Text('cwd: ~/life', style: mono(size: 12, color: C.dimmer)),
               ]),
-            ]),
-          ),
+            ),
+            const SizedBox(width: 20),
+            // 우측 — Tips / What's new (최근 릴리즈가 곧 뉴스)
+            Expanded(
+              flex: 6,
+              child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Tips for getting started',
+                        style: mono(
+                            size: 13,
+                            color: C.accent,
+                            weight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    Text('/sprint 에 커밋 쌓고 목요일에 ship 하면 됨',
+                        style: kr(size: 13, height: 1.5)),
+                    const SizedBox(height: 12),
+                    Container(height: 1, color: C.accent),
+                    const SizedBox(height: 12),
+                    Text("What's new",
+                        style: mono(
+                            size: 13,
+                            color: C.accent,
+                            weight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    if (recent.isEmpty)
+                      Text('아직 릴리즈 없음 — 첫 배포가 첫 뉴스임',
+                          style: kr(size: 13, color: C.dim, height: 1.5))
+                    else
+                      for (final r in recent)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                              '${r.ver}${r.title.isNotEmpty ? ' ${r.title}' : ''} · ${r.date}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: kr(size: 13, height: 1.5)),
+                        ),
+                    const SizedBox(height: 4),
+                    Text('/changelog for more',
+                        style: mono(size: 12, color: C.dim, italic: true)),
+                  ]),
+            ),
+          ]),
         ),
-      );
+      ),
+    );
+  }
 
-  /// 하단 고정 status line — "⏵⏵ accept edits on" 패러디.
+  /// ▌ 어나운스 라인 — "Opus 4.8 is here!" 자리. D-day·경고가 여기 뜸.
+  Widget _announce(AppState s) {
+    final today = isThursday();
+    final dd = daysToThu();
+    final doneN = s.todos.where((t) => t.done).length;
+    Color color = C.accent;
+    String head;
+    String rest;
+    if (today && s.streak > 0 && doneN == 0) {
+      color = C.rollback;
+      head = '오늘 배포 안 하면 streak ${s.streak}주 → 0.';
+      rest = ' 하나라도 ship ㄱㄱ';
+    } else if (dd == 1 && doneN == 0 && s.todos.isNotEmpty) {
+      color = C.warn;
+      head = '내일이 배포일!';
+      rest = ' 완료 0건 — 오늘 하나는 끝내자';
+    } else if (today) {
+      head = '오늘이 배포일!';
+      rest = ' ⏵⏵ ship 으로 ${verStr(s.major, s.minor + 1)} 릴리즈 ㄱㄱ';
+    } else {
+      head = 'D-$dd · 목요일 배포!';
+      rest = ' 커밋 쌓는 중 · streak ${s.streak}주';
+    }
+    return Container(
+      margin: const EdgeInsets.only(top: 26),
+      padding: const EdgeInsets.only(left: 10),
+      decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: color, width: 3))),
+      child: Text.rich(TextSpan(children: [
+        TextSpan(
+            text: head,
+            style: mono(size: 13, color: color, weight: FontWeight.w700)),
+        TextSpan(text: rest, style: mono(size: 13, color: C.dim)),
+      ])),
+    );
+  }
+
+  /// 하단 고정 status line — 모델명 블루 + ⏵⏵ 핑크 2줄, Claude Code 그대로.
   Widget _statusLine(AppState s) => Positioned(
         left: 0,
         right: 0,
@@ -173,103 +240,55 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
           child: SafeArea(
             top: false,
-            child: Row(children: [
-              Text('⏵⏵ deploy mode on',
-                  style: mono(size: 11, color: C.accent2)),
-              Text(' (every thursday)',
-                  style: mono(size: 11, color: C.dimmer)),
-              const Spacer(),
-              Text(
-                  isThursday()
-                      ? 'v${s.major}.${s.minor} · 🚀 today'
-                      : 'v${s.major}.${s.minor} · D-${daysToThu()}',
-                  style: mono(size: 11, color: C.dimmer)),
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(children: [
+                    Text('deploy-day v${s.major}.${s.minor} (1주 cycle)',
+                        style: mono(
+                            size: 12, color: C.blue, weight: FontWeight.w700)),
+                    Text(' · streak ${s.streak}주 · ',
+                        style: mono(size: 12, color: C.dimmer)),
+                    Text('main',
+                        style: mono(
+                            size: 12,
+                            color: C.magenta,
+                            weight: FontWeight.w700)),
+                    const Spacer(),
+                    if (isDesktopShell)
+                      // 항상 위 고정 토글
+                      ValueListenableBuilder<bool>(
+                        valueListenable: pinned,
+                        builder: (_, on, _) => GestureDetector(
+                          onTap: togglePin,
+                          child: MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: Text('[pin${on ? ' ●' : ''}]',
+                                style: mono(
+                                    size: 12,
+                                    color: on ? C.accent : C.dimmer)),
+                          ),
+                        ),
+                      ),
+                  ]),
+                  const SizedBox(height: 3),
+                  Row(children: [
+                    Text('⏵⏵ deploy mode on',
+                        style: mono(
+                            size: 12, color: C.pink, weight: FontWeight.w700)),
+                    Text(' (every thursday)',
+                        style: mono(size: 12, color: C.pink)),
+                    Text(
+                        isThursday()
+                            ? ' · 🚀 today'
+                            : ' · D-${daysToThu()} for ship',
+                        style: mono(size: 12, color: C.dimmer)),
+                  ]),
+                ]),
           ),
         ),
       );
-
-  Widget _header(AppState s) {
-    final today = isThursday();
-    final dd = daysToThu();
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(4, 34, 4, 22),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // v1.0 큰 버전 — 플랫 Claude 오렌지
-        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('v${s.major}',
-              style: mono(
-                  size: 64,
-                  color: C.accent,
-                  weight: FontWeight.w800,
-                  spacing: -2,
-                  height: 0.95)),
-          Padding(
-            padding: const EdgeInsets.only(top: 6),
-            child: Text('.${s.minor}',
-                style: mono(
-                    size: 32, color: C.dimmer, weight: FontWeight.w500)),
-          ),
-        ]),
-        const SizedBox(height: 14),
-        Row(children: [
-          // D-day 뱃지
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            decoration: today
-                ? BoxDecoration(
-                    color: C.accent,
-                    borderRadius: BorderRadius.circular(5),
-                  )
-                : BoxDecoration(
-                    color: C.panel,
-                    border: Border.all(color: C.border),
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-            child: Text(today ? '⏵⏵ 오늘이 배포일' : 'D-$dd · 목요일',
-                style: mono(
-                    size: 13,
-                    weight: FontWeight.w700,
-                    color: today ? C.bg : C.dim)),
-          ),
-          const SizedBox(width: 14),
-          Text.rich(TextSpan(style: mono(), children: [
-            const TextSpan(text: '🔥 streak '),
-            TextSpan(
-                text: '${s.streak}',
-                style: mono(color: C.ship, weight: FontWeight.w700)),
-            const TextSpan(text: '주'),
-          ])),
-        ]),
-      ]),
-    );
-  }
-
-  Widget _alertBar(AppState s) {
-    final today = isThursday();
-    final dd = daysToThu();
-    final doneN = s.todos.where((t) => t.done).length;
-    String? msg;
-    Color? color;
-    if (today && s.streak > 0 && doneN == 0) {
-      msg = '⚠️ 오늘 배포 안 하면 streak ${s.streak}주 → 0. 하나라도 ship ㄱㄱ';
-      color = C.rollback;
-    } else if (dd == 1 && doneN == 0 && s.todos.isNotEmpty) {
-      msg = '⏳ 내일 배포일인데 완료 0건. 오늘 하나는 끝내자';
-      color = C.warn;
-    }
-    if (msg == null) return const SizedBox.shrink();
-    return Container(
-      margin: const EdgeInsets.only(top: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: color!.withValues(alpha: .09),
-        border: Border.all(color: color.withValues(alpha: .4)),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      child: Text(msg, style: mono(size: 13, color: color, height: 1.4)),
-    );
-  }
 
   /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog /memo).
   Widget _tabs(AppState s) {
