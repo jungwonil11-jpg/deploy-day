@@ -62,6 +62,9 @@ class AppNotifier extends Notifier<AppState> {
     _set(state.copyWith(shipDay: day));
   }
 
+  /// 말투 페르소나 변경 — /config 에서 호출.
+  void setPersona(String id) => _set(state.copyWith(persona: id));
+
   void addTodo(String text) {
     final v = text.trim();
     if (v.isEmpty) return;

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
 import '../models.dart';
+import '../persona.dart';
 import '../theme.dart';
 import 'ship_dialog.dart';
 
@@ -148,7 +149,7 @@ class _SprintTabState extends ConsumerState<SprintTab> {
 
   List<Widget> _todoRows(AppState s, String active) {
     if (s.todos.isEmpty) {
-      return [emptyBox('아직 커밋 없음\n오늘 할 거 하나 추가ㄱㄱ')];
+      return [emptyBox(personaOf(s).emptySprint)];
     }
     final rows = <Widget>[];
     if (active == 'all') {
@@ -255,7 +256,8 @@ class _SprintTabState extends ConsumerState<SprintTab> {
     return GestureDetector(
       onTap: () {
         if (!ready) {
-          toast(context, '배포는 ${kDayKr[s.shipDay]}요일에 🚀 (지금은 커밋 쌓는 날)');
+          toast(context,
+              pfmt(personaOf(s).shipNotReady, {'day': kDayKr[s.shipDay]}));
           return;
         }
         _openShip(s);
@@ -294,11 +296,12 @@ class _SprintTabState extends ConsumerState<SprintTab> {
         .read(appProvider.notifier)
         .ship(title: res.title, graduated: res.graduated);
     widget.confetti.play();
+    final p = personaOf(s);
     final names = res.graduated.map(s.pName).join(', ');
     toast(
         context,
         res.graduated.isNotEmpty
-            ? '🎉 $names 졸업 · ${rel.ver} 배포!'
-            : '🚀 ${rel.ver} 배포 완료!');
+            ? pfmt(p.shipGrad, {'names': names, 'ver': rel.ver})
+            : pfmt(p.shipDone, {'ver': rel.ver}));
   }
 }

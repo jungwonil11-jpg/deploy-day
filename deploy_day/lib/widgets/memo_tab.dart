@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../app_state.dart';
 import '../memo/memo_store.dart';
+import '../persona.dart';
 import '../theme.dart';
 
 /// /memo 탭 — 바탕화면 포스트잇 관리.
@@ -44,7 +46,7 @@ class MemoTab extends ConsumerWidget {
           ]),
         ),
         if (memos.isEmpty)
-          emptyBox('포스트잇 없음\n+ memo 로 바탕화면에 하나 붙여보셈')
+          emptyBox(personaOf(ref.watch(appProvider)).emptyMemo)
         else
           for (final m in memos) _row(context, ref, m),
       ]),

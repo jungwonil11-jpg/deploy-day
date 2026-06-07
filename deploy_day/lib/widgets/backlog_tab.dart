@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app_state.dart';
+import '../persona.dart';
 import '../theme.dart';
 
 class BacklogTab extends ConsumerStatefulWidget {
@@ -42,7 +43,7 @@ class _BacklogTabState extends ConsumerState<BacklogTab> {
           onAdd: _add,
         ),
         if (s.backlog.isEmpty)
-          emptyBox('백로그 비어있음\n다음 버전 아이디어 미리 던져놓기')
+          emptyBox(personaOf(s).emptyBacklog)
         else
           for (final b in s.backlog)
             Container(

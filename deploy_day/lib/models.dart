@@ -186,6 +186,7 @@ class Release {
 
 class AppState {
   final String name; // 배포자 이름 — 첫 실행 때 입력받음
+  final String persona; // 앱 말투 페르소나 id (persona.dart)
   final int shipDay; // 배포 요일 (DateTime.weekday, 기본 목요일)
   final int major;
   final int minor;
@@ -197,6 +198,7 @@ class AppState {
 
   const AppState({
     this.name = '',
+    this.persona = 'victor',
     this.shipDay = DateTime.thursday,
     required this.major,
     required this.minor,
@@ -218,6 +220,7 @@ class AppState {
 
   AppState copyWith({
     String? name,
+    String? persona,
     int? shipDay,
     int? major,
     int? minor,
@@ -229,6 +232,7 @@ class AppState {
   }) =>
       AppState(
         name: name ?? this.name,
+        persona: persona ?? this.persona,
         shipDay: shipDay ?? this.shipDay,
         major: major ?? this.major,
         minor: minor ?? this.minor,
@@ -256,6 +260,7 @@ class AppState {
   /// name은 Flutter 버전에서 추가된 키 (HTML 백업엔 없어도 무방).
   Map<String, dynamic> toJson() => {
         'name': name,
+        'persona': persona,
         'shipDay': shipDay,
         'major': major,
         'minor': minor,
@@ -268,6 +273,7 @@ class AppState {
 
   factory AppState.fromJson(Map<String, dynamic> j) => AppState(
         name: (j['name'] ?? '') as String,
+        persona: (j['persona'] ?? 'victor') as String,
         shipDay: (j['shipDay'] ?? DateTime.thursday) as int,
         major: (j['major'] ?? 1) as int,
         minor: (j['minor'] ?? 0) as int,

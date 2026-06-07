@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models.dart';
+import '../persona.dart';
 import '../theme.dart';
 
 /// 배포 모달의 결과 — 릴리즈 제목 + 졸업 확정한 프로젝트 id들.
@@ -62,8 +63,7 @@ class _ShipDialogState extends State<_ShipDialog> {
                         size: 24, color: C.txt, weight: FontWeight.w800)),
               ])),
               const SizedBox(height: 4),
-              Text('완료한 건 릴리즈노트로 박제 · 못한 건 다음 스프린트로 롤백',
-                  style: mono()),
+              Text(personaOf(s).shipDialogSub, style: mono()),
             ]),
           ),
           // 본문

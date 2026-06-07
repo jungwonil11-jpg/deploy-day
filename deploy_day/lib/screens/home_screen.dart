@@ -9,9 +9,11 @@ import '../app_state.dart';
 import '../desktop_shell.dart';
 import '../memo/memo_store.dart';
 import '../models.dart';
+import '../persona.dart';
 import '../theme.dart';
 import '../widgets/backlog_tab.dart';
 import '../widgets/changelog_tab.dart';
+import '../widgets/config_tab.dart';
 import '../widgets/memo_tab.dart';
 import '../widgets/sprint_tab.dart';
 
@@ -72,7 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               children: [
                 Text(
                     first
-                        ? '배포자 이름부터 박고 시작함.\n나중에 배너의 이름 눌러서 바꿀 수 있음.'
+                        ? personaOf(ref.read(appProvider)).onboard
                         : '새 이름 입력.',
                     style: kr(size: 13, color: C.dim, height: 1.6)),
                 const SizedBox(height: 14),
@@ -144,12 +146,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     const SizedBox(height: 28),
                     _tabs(s),
                     const SizedBox(height: 16),
-                    switch (tab) {
-                      0 => SprintTab(confetti: _confetti),
-                      1 => const BacklogTab(),
-                      2 => const ChangelogTab(),
-                      _ => const MemoTab(),
-                    },
+                    _tabBody(),
                     _tools(),
                   ],
                 ),
@@ -242,7 +239,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             color: C.accent,
                             weight: FontWeight.w700)),
                     const SizedBox(height: 6),
-                    Text('/sprint 에 커밋 쌓고 ${kDayKr[s.shipDay]}요일에 ship 하면 됨',
+                    Text(pfmt(personaOf(s).tips, {'day': kDayKr[s.shipDay]}),
                         style: kr(size: 13, height: 1.5)),
                     const SizedBox(height: 12),
                     Container(height: 1, color: C.accent),
@@ -322,27 +319,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
 
   /// ▌ 어나운스 라인 — "Opus 4.8 is here!" 자리. D-day·경고가 여기 뜸.
+  /// 문구는 페르소나 따라감.
   Widget _announce(AppState s) {
+    final p = personaOf(s);
     final today = isShipDay(s.shipDay);
     final dd = daysToShip(s.shipDay);
     final doneN = s.todos.where((t) => t.done).length;
+    final v = {
+      'streak': s.streak,
+      'ver': verStr(s.major, s.minor + 1),
+      'd': dd,
+      'day': kDayKr[s.shipDay],
+    };
     Color color = C.accent;
     String head;
     String rest;
     if (today && s.streak > 0 && doneN == 0) {
       color = C.rollback;
-      head = '오늘 배포 안 하면 streak ${s.streak}주 → 0.';
-      rest = ' 하나라도 ship ㄱㄱ';
+      head = pfmt(p.riskHead, v);
+      rest = pfmt(p.riskRest, v);
     } else if (dd == 1 && doneN == 0 && s.todos.isNotEmpty) {
       color = C.warn;
-      head = '내일이 배포일!';
-      rest = ' 완료 0건 — 오늘 하나는 끝내자';
+      head = pfmt(p.warnHead, v);
+      rest = pfmt(p.warnRest, v);
     } else if (today) {
-      head = '오늘이 배포일!';
-      rest = ' ⏵⏵ ship 으로 ${verStr(s.major, s.minor + 1)} 릴리즈 ㄱㄱ';
+      head = pfmt(p.todayHead, v);
+      rest = pfmt(p.todayRest, v);
     } else {
-      head = 'D-$dd · ${kDayKr[s.shipDay]}요일 배포!';
-      rest = ' 커밋 쌓는 중 · streak ${s.streak}주';
+      head = pfmt(p.normalHead, v);
+      rest = pfmt(p.normalRest, v);
     }
     return Container(
       margin: const EdgeInsets.only(top: 26),
@@ -418,14 +423,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
       );
 
-  /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog /memo).
+  /// 현재 탭 본문 — _tabs의 항목 순서와 1:1.
+  Widget _tabBody() {
+    final bodies = <Widget>[
+      SprintTab(confetti: _confetti),
+      const BacklogTab(),
+      const ChangelogTab(),
+      // 포스트잇은 데스크탑 전용
+      if (isDesktopShell) const MemoTab(),
+      const ConfigTab(),
+    ];
+    return bodies[tab.clamp(0, bodies.length - 1)];
+  }
+
+  /// 탭 — 슬래시 커맨드 스타일 (/sprint /backlog /changelog /memo /config).
   Widget _tabs(AppState s) {
     final items = [
-      ('/sprint', s.todos.length),
-      ('/backlog', s.backlog.length),
-      ('/changelog', s.releases.length),
-      // 포스트잇은 데스크탑 전용
-      if (isDesktopShell) ('/memo', ref.watch(memoProvider).length),
+      ('/sprint', '${s.todos.length}'),
+      ('/backlog', '${s.backlog.length}'),
+      ('/changelog', '${s.releases.length}'),
+      if (isDesktopShell) ('/memo', '${ref.watch(memoProvider).length}'),
+      ('/config', ''), // 설정엔 카운트 없음
     ];
     return Row(
       children: [
@@ -451,11 +469,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             size: 13,
                             weight: FontWeight.w500,
                             color: tab == i ? C.accent : C.dim)),
-                    TextSpan(
-                        text: ' ${items[i].$2}',
-                        style: mono(
-                            size: 13,
-                            color: tab == i ? C.txt : C.dimmer)),
+                    if (items[i].$2.isNotEmpty)
+                      TextSpan(
+                          text: ' ${items[i].$2}',
+                          style: mono(
+                              size: 13,
+                              color: tab == i ? C.txt : C.dimmer)),
                   ])),
                 ),
               ),
