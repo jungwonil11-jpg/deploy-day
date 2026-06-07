@@ -9,16 +9,22 @@ import '../app_state.dart';
 import '../desktop_shell.dart';
 import '../models.dart';
 
-/// 메모 색 팔레트 — 터미널 톤 포스트잇 6색 (accent 글리프 + 잉크색).
-/// (배경, 잉크) 쌍 — 본문은 어두운 면에 밝은 글씨 (CLI 감성 유지).
+/// 메모 색 팔레트 — (배경, 잉크) 쌍. 7색.
+/// 0번 = 다크 기본(차콜), 1~5 = 공용 액센트, 6번 = 라이트 기본(페이퍼).
+/// 새 메모는 앱 테마에 맞춰 기본색이 정해짐 (다크→0, 라이트→6).
 const kMemoColors = [
-  (0xFF1A1A1A, 0xFFECECEC), // 기본 차콜
-  (0xFF2A1C16, 0xFFE8B79E), // 오렌지
-  (0xFF15241A, 0xFF9EE0B0), // 그린
-  (0xFF1A2230, 0xFF9EC9F0), // 블루
-  (0xFF2A1620, 0xFFF0A0C8), // 핑크
-  (0xFF2A2410, 0xFFE8D08A), // 옐로
+  (0xFF1A1A1A, 0xFFECECEC), // 0 다크 기본 차콜
+  (0xFF2A1C16, 0xFFE8B79E), // 1 오렌지
+  (0xFF15241A, 0xFF9EE0B0), // 2 그린
+  (0xFF1A2230, 0xFF9EC9F0), // 3 블루
+  (0xFF2A1620, 0xFFF0A0C8), // 4 핑크
+  (0xFF2A2410, 0xFFE8D08A), // 5 옐로
+  (0xFFFAF6E9, 0xFF2D2B28), // 6 라이트 기본 페이퍼 (밝은 면 + 어두운 글씨)
 ];
+
+/// 다크 기본 색 인덱스 / 라이트 기본 색 인덱스.
+const kMemoDarkDefault = 0;
+const kMemoLightDefault = 6;
 
 /// 바탕화면 포스트잇 메모 한 장.
 class Memo {
@@ -173,10 +179,13 @@ class MemoNotifier extends Notifier<List<Memo>> {
   Future<void> newMemo() async {
     if (!isDesktopShell) return;
     final n = state.length;
+    // 새 메모 기본색은 앱 테마를 따라감 (다크→차콜, 라이트→페이퍼)
+    final dark = ref.read(appProvider).dark;
     final m = Memo(
       id: uid(),
       x: 140 + (n % 8) * 36,
       y: 140 + (n % 8) * 36,
+      color: dark ? kMemoDarkDefault : kMemoLightDefault,
     );
     _persist([...state, m]);
     await _spawn(m);

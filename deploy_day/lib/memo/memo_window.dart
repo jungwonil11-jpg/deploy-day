@@ -146,10 +146,15 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
     final (bgHex, inkHex) = kMemoColors[_color.clamp(0, kMemoColors.length - 1)];
     final bg = Color(bgHex);
     final ink = Color(inkHex);
+    // 밝은/어두운 배경 모두에서 보이도록 오버레이는 잉크색 기반으로
+    final barTint = ink.withValues(alpha: .06);
+    final lineTint = ink.withValues(alpha: .14);
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
+        brightness: bg.computeLuminance() < .5
+            ? Brightness.dark
+            : Brightness.light,
         scaffoldBackgroundColor: bg,
         textSelectionTheme: TextSelectionThemeData(cursorColor: C.accent),
       ),
@@ -165,7 +170,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
               onPanStart: (_) => startWindowDrag(_hwnd),
               child: Container(
                 height: 30,
-                color: Colors.white.withValues(alpha: .05),
+                color: barTint,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 child: Row(children: [
                   Text('✻',
@@ -188,7 +193,7 @@ class _MemoWindowAppState extends State<MemoWindowApp> {
                 ]),
               ),
             ),
-            Divider(height: 1, thickness: 1, color: Colors.white.withValues(alpha: .08)),
+            Divider(height: 1, thickness: 1, color: lineTint),
             // 메모 본문
             Expanded(
               child: Padding(
