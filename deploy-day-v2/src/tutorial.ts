@@ -19,6 +19,7 @@ export const TUT_STEPS: TutStep[] = [
   { key: 'project', targetId: 'add-project', tab: 0, count: () => useApp.getState().s.projects.length, auto: (b, n) => n > b },
   { key: 'commit', targetId: 'commit-input', tab: 0, count: () => useApp.getState().s.todos.length, auto: (b, n) => n > b },
   { key: 'check', targetId: 'todo-list', tab: 0, count: () => useApp.getState().s.todos.filter((t) => t.done).length, auto: (b, n) => n > b },
+  { key: 'reorder', targetId: 'todo-list', tab: 0 },
   { key: 'move', targetId: 'project-chips', tab: 0 },
   { key: 'backlog', targetId: 'tab-1', tab: 1 },
   { key: 'ship', targetId: 'ship-bar', tab: 0 },
