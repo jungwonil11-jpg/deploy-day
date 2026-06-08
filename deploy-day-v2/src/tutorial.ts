@@ -25,7 +25,7 @@ export const TUT_STEPS: TutStep[] = [
   { key: 'changelog', targetId: 'tab-2', tab: 2 },
   { key: 'memo', targetId: 'tab-3', tab: 3 },
   { key: 'config', targetId: 'tab-4', tab: 4 },
-  { key: 'streak', targetId: 'statusline', tab: 0 },
+  { key: 'streak', targetId: 'streak', tab: 0 },
   { key: 'easter', targetId: 'clawd', tab: 0 },
   { key: 'done', tab: 0 },
 ];

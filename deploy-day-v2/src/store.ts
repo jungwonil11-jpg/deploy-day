@@ -41,6 +41,7 @@ interface AppStore {
 
   // 투두
   addTodo: (text: string) => void;
+  addTodoTo: (text: string, project: string | null) => void; // 프로젝트 지정 추가 (메모→커밋)
   toggleTodo: (id: string) => void;
   editTodo: (id: string, text: string) => void;
   deleteTodo: (id: string) => void;
@@ -121,6 +122,15 @@ export const useApp = create<AppStore>((set, get) => {
       commit({
         ...s,
         todos: [...s.todos, { id: uid(), text: v, done: false, carried: false, project: curTarget() }],
+      });
+    },
+    addTodoTo: (text, project) => {
+      const v = text.trim();
+      if (!v) return;
+      const s = get().s;
+      commit({
+        ...s,
+        todos: [...s.todos, { id: uid(), text: v, done: false, carried: false, project }],
       });
     },
     toggleTodo: (id) => {

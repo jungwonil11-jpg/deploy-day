@@ -47,7 +47,7 @@ export default function App() {
     const uns = [
       listen<{ id: string; patch: Partial<Memo> }>('memo-patch', (e) => st.patchMemo(e.payload.id, e.payload.patch)),
       listen<{ id: string }>('memo-closed', (e) => st.markMemoClosed(e.payload.id)),
-      listen<{ text: string }>('memo-to-commit', (e) => { st.addTodo(e.payload.text); uiToast(personaOf(st.s).ui.memoSent); }),
+      listen<{ text: string; project?: string | null }>('memo-to-commit', (e) => { st.addTodoTo(e.payload.text, e.payload.project ?? null); uiToast(personaOf(st.s).ui.memoSent); }),
       listen('tray-new-memo', () => { void st.newMemo(); }),
     ];
     void st.restoreMemos();
@@ -84,7 +84,8 @@ export default function App() {
   }
 
   return (
-    <div className="app-scroll">
+    <div className="app-root">
+      <div className="app-scroll">
       <div className="app-col">
         {/* 시작 배너 */}
         <div className="clibox" style={{ marginTop: 22 }}>
@@ -99,7 +100,7 @@ export default function App() {
               </div>
               <div data-tut="clawd"><ClawdLogo foundMsg={p.ui.clawd} /></div>
               <div className="mono c-dim" style={{ fontSize: 12 }}>인생 배포 · 매주 {kDayKr[s.shipDay]}요일</div>
-              <div className="mono" style={{ fontSize: 12, marginTop: 4 }}>
+              <div className="mono" style={{ fontSize: 12, marginTop: 4 }} data-tut="streak">
                 streak {s.streak}주 · <span className="c-ship">● LIVE</span>
               </div>
             </div>
@@ -139,8 +140,9 @@ export default function App() {
         <div style={{ height: 16 }} />
         {tabs[tab]?.[2]}
       </div>
+      </div>
 
-      {/* status line */}
+      {/* status line — 고정 오버레이가 아니라 실제 푸터(스크롤 영역 아래) */}
       <div className="statusline" data-tut="statusline">
         <div className="row1">
           <span className="c-blue" style={{ fontWeight: 700 }}>deploy-day {verStr(s.major, s.minor)} (1주 cycle)</span>

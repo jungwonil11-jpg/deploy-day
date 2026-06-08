@@ -9,11 +9,15 @@ import { kMemoColors, type Memo } from './types';
 
 const win = getCurrentWebviewWindow();
 
+type ProjOpt = { id: string; name: string; color: string };
+
 export function MemoWindow({ id }: { id: string }) {
   const [memo, setMemo] = useState<Memo | null>(null);
   const [color, setColor] = useState(0);
   const [pinned, setPinned] = useState(false);
   const [dark, setDark] = useState(true);
+  const [projects, setProjects] = useState<ProjOpt[]>([]);
+  const [picking, setPicking] = useState(false);
   const debounce = useRef<number | undefined>(undefined);
 
   // 초기 데이터 로드 — 메인과 같은 store 파일을 직접 읽음 (공유 백엔드)
@@ -27,6 +31,11 @@ export function MemoWindow({ id }: { id: string }) {
         setColor(m.color);
         setPinned(m.pinned);
       }
+      setProjects(
+        (state?.projects ?? [])
+          .filter((p: any) => !p.done)
+          .map((p: any) => ({ id: p.id, name: p.name, color: p.color })),
+      );
       setDark(state?.dark ?? true);
     })();
 
@@ -63,10 +72,18 @@ export function MemoWindow({ id }: { id: string }) {
     patch({ pinned: v });
   };
 
-  const toCommit = () => {
+  // 빈 메모면 무시, 프로젝트 없으면 바로 미분류로, 있으면 선택 메뉴 표시
+  const startToCommit = () => {
     const t = (memo?.text ?? '').trim();
     if (!t) return;
-    emit('memo-to-commit', { text: t });
+    if (projects.length === 0) { emit('memo-to-commit', { text: t, project: null }); return; }
+    setPicking((v) => !v);
+  };
+  const sendToCommit = (project: string | null) => {
+    const t = (memo?.text ?? '').trim();
+    if (!t) return;
+    emit('memo-to-commit', { text: t, project });
+    setPicking(false);
   };
 
   const close = async () => {
@@ -81,7 +98,7 @@ export function MemoWindow({ id }: { id: string }) {
   void dark; // 메모는 자체 색 팔레트라 테마와 독립 (현재는 표시용)
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, color: ink, fontFamily: "'JetBrains Mono','Consolas',monospace" }}>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: bg, color: ink, fontFamily: "'JetBrains Mono','Consolas',monospace", position: 'relative' }}>
       {/* 미니 터미널 타이틀바 — 왼쪽 라벨만 드래그 영역, 버튼은 영역 밖(클릭 가능) */}
       <div style={{ height: 30, display: 'flex', alignItems: 'center', padding: '0 10px', background: 'rgba(255,255,255,.06)', flex: 'none' }}>
         <div data-tauri-drag-region style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, height: '100%' }}>
@@ -89,11 +106,31 @@ export function MemoWindow({ id }: { id: string }) {
           <span style={{ fontSize: 12, opacity: 0.7, pointerEvents: 'none' }}>memo</span>
         </div>
         <Btn label="◑" tip="색 변경" onClick={cycleColor} ink={ink} />
-        <Btn label="→commit" tip="커밋으로" onClick={toCommit} ink={ink} />
+        <Btn label="→commit" tip="커밋으로 (프로젝트 선택)" onClick={startToCommit} ink={picking ? '#d97757' : ink} />
         <Btn label={`[pin${pinned ? ' ●' : ''}]`} tip="항상 위" onClick={togglePin} ink={pinned ? '#d97757' : ink} />
         <Btn label="✕" tip="닫기" onClick={close} ink={ink} />
       </div>
       <div style={{ height: 1, background: 'rgba(128,128,128,.25)', flex: 'none' }} />
+
+      {/* →commit 프로젝트 선택 드롭다운 */}
+      {picking && (
+        <>
+          <div onClick={() => setPicking(false)} style={{ position: 'absolute', inset: 0, zIndex: 5 }} />
+          <div
+            style={{
+              position: 'absolute', top: 31, right: 8, zIndex: 6, minWidth: 150, maxHeight: 180, overflowY: 'auto',
+              background: '#1a1a1a', color: '#ececec', border: '1px solid #3a3a3a', borderRadius: 5,
+              boxShadow: '0 6px 18px rgba(0,0,0,.5)', padding: 4, fontSize: 12,
+            }}
+          >
+            <div style={{ padding: '5px 8px', opacity: 0.55, fontSize: 10 }}>어디로 보낼까?</div>
+            <MenuItem label="미분류" color="#5c5c5c" onClick={() => sendToCommit(null)} />
+            {projects.map((pp) => (
+              <MenuItem key={pp.id} label={pp.name} color={pp.color} onClick={() => sendToCommit(pp.id)} />
+            ))}
+          </div>
+        </>
+      )}
       {/* 본문 */}
       <textarea
         value={memo.text}
@@ -106,6 +143,20 @@ export function MemoWindow({ id }: { id: string }) {
           fontFamily: "'Nanum Gothic Coding','Malgun Gothic',monospace", fontSize: 13.5, lineHeight: 1.45,
         }}
       />
+    </div>
+  );
+}
+
+function MenuItem({ label, color, onClick }: { label: string; color: string; onClick: () => void }) {
+  return (
+    <div
+      onClick={onClick}
+      style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '6px 8px', borderRadius: 4, cursor: 'pointer' }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,.08)')}
+      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+    >
+      <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, flex: 'none' }} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</span>
     </div>
   );
 }

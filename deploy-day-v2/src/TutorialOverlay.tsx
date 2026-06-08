@@ -51,7 +51,9 @@ export function TutorialOverlay() {
     : { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200 }}>
+    // 루트는 클릭 통과(pointerEvents:none) — 구멍 영역 클릭이 페이지에 닿아야
+    // "직접 해보면 넘어가요"가 작동함. 가림막/풍선만 개별적으로 pointer 받음.
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, pointerEvents: 'none' }}>
       {/* 가림막 — 구멍 영역만 빼고 4분할로 덮어 클릭 통과 */}
       {hole ? (
         <>
@@ -63,11 +65,11 @@ export function TutorialOverlay() {
           <div style={{ position: 'fixed', left: hole.left, top: hole.top, width: hole.width, height: hole.height, border: '2px solid var(--accent)', borderRadius: 6, pointerEvents: 'none' }} />
         </>
       ) : (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.72)' }} onClick={() => {}} />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.72)', pointerEvents: 'auto' }} onClick={() => {}} />
       )}
 
       {/* 설명 풍선 */}
-      <div style={{ ...bubbleStyle, width: 'min(460px, calc(100vw - 48px))', background: 'var(--panel)', border: '1px solid var(--accent)', borderRadius: 6, padding: '16px 18px' }}>
+      <div style={{ ...bubbleStyle, pointerEvents: 'auto', width: 'min(460px, calc(100vw - 48px))', background: 'var(--panel)', border: '1px solid var(--accent)', borderRadius: 6, padding: '16px 18px' }}>
         <div className="mono c-accent" style={{ fontSize: 11 }}>tutorial · {step + 1}/{TUT_STEPS.length}</div>
         <div className="kr" style={{ fontSize: 14, lineHeight: 1.7, marginTop: 8, whiteSpace: 'pre-line', color: 'var(--txt)' }}>{text}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14 }}>
@@ -98,6 +100,7 @@ function Scrim(props: { left: number; top: number; right?: number; bottom?: numb
         width: width !== undefined ? width : undefined,
         height: height !== undefined ? height : undefined,
         background: 'rgba(0,0,0,.72)',
+        pointerEvents: 'auto', // 가림막은 클릭 차단(구멍 밖)
       }}
     />
   );

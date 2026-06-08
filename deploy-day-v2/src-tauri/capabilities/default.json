@@ -12,6 +12,7 @@
     "autostart:allow-enable",
     "autostart:allow-disable",
     "autostart:allow-is-enabled",
+    "notification:default",
     "core:tray:default",
     "core:window:allow-show",
     "core:window:allow-hide",

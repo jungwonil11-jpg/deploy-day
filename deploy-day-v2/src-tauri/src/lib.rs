@@ -4,6 +4,7 @@ use tauri::{
     Emitter, Manager, WindowEvent,
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
+use tauri_plugin_notification::NotificationExt;
 
 fn show_main(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
@@ -20,6 +21,7 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             let handle = app.handle();
             let autostart_on = handle.autolaunch().is_enabled().unwrap_or(false);
@@ -90,13 +92,24 @@ pub fn run() {
                 })
                 .build(app)?;
 
-            // 메인 창 X → 종료 대신 트레이로 숨김
+            // 메인 창 X → 종료 대신 트레이로 숨김 + 최초 1회 "트레이 상주" 알림
             if let Some(main) = app.get_webview_window("main") {
                 let main_cl = main.clone();
+                let notify_handle = handle.clone();
+                let notified = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
                 main.on_window_event(move |e| {
                     if let WindowEvent::CloseRequested { api, .. } = e {
                         api.prevent_close();
                         let _ = main_cl.hide();
+                        use std::sync::atomic::Ordering;
+                        if !notified.swap(true, Ordering::Relaxed) {
+                            let _ = notify_handle
+                                .notification()
+                                .builder()
+                                .title("deploy-day")
+                                .body("트레이에서 계속 실행 중이에요. 트레이 아이콘을 누르면 다시 열려요.")
+                                .show();
+                        }
                     }
                 });
             }
