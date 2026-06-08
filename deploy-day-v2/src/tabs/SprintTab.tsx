@@ -17,7 +17,7 @@ import {
   type Todo,
 } from '../types';
 import { CliBox, PDot, Empty, PromptInput } from '../ui';
-import { uiPrompt, uiAlert } from '../dialogs';
+import { uiPrompt, uiAlert, uiConfirm } from '../dialogs';
 
 const NULL_PID = '∅'; // 미분류(null) 프로젝트를 data 속성에 표기
 const DRAG_THRESHOLD = 5; // 이 픽셀 넘게 움직여야 드래그로 인정(아니면 클릭)
@@ -41,6 +41,8 @@ export function SprintTab() {
   const deleteTodo = useApp((st) => st.deleteTodo);
   const moveTodoToProject = useApp((st) => st.moveTodoToProject);
   const addProject = useApp((st) => st.addProject);
+  const renameProject = useApp((st) => st.renameProject);
+  const deleteProject = useApp((st) => st.deleteProject);
   const reorderTodoSection = useApp((st) => st.reorderTodoSection);
   const reorderProjects = useApp((st) => st.reorderProjects);
   const ship = useApp((st) => st.ship);
@@ -85,6 +87,13 @@ export function SprintTab() {
   const target = active === 'all' ? '미분류' : projName(s, active);
   const editTodoPrompt = (t: Todo) => { uiPrompt(p.ui.todoEdit, t.text).then((v) => { if (v) editTodo(t.id, v); }); };
   const addProjectPrompt = () => { uiPrompt(p.ui.projAdd, '', p.ui.projAddHint).then((v) => { if (v) addProject(v); }); };
+  const renameProjectPrompt = (id: string, name: string) => {
+    uiPrompt(p.ui.projRename, name, p.ui.projAddHint).then((v) => { if (v) renameProject(id, v); });
+  };
+  const deleteProjectConfirm = (id: string, name: string) => {
+    const n = s.todos.filter((t) => t.project === id).length; // 함께 삭제될 커밋 수
+    uiConfirm(pfmt(p.ui.projDelAsk, { name, n }), '삭제').then((ok) => { if (ok) deleteProject(id); });
+  };
 
   const hit = (x: number, y: number, sel: string): HTMLElement | null =>
     ((document.elementFromPoint(x, y) as HTMLElement | null)?.closest(sel) as HTMLElement | null) ?? null;
@@ -279,13 +288,35 @@ export function SprintTab() {
                 onPointerDown={(e) => onDown(e, { kind: 'project', ids: projIds, id: pp.id })}
                 onPointerMove={onMove}
                 onPointerUp={onUp}
-                onClick={guard(() => setActive(pp.id))}
+                onClick={guard(() => { if (active === pp.id) renameProjectPrompt(pp.id, pp.name); else setActive(pp.id); })}
                 style={{ cursor: 'grab', touchAction: 'none', ...(dragging ? { background: 'var(--panel2)', boxShadow: '0 4px 14px rgba(0,0,0,.4)', zIndex: 3 } : null) }}
-                title="끌어서 순서 변경 · 커밋을 놓으면 이 프로젝트로"
+                title={active === pp.id ? '한 번 더 누르면 이름 수정 · 끌어서 순서 변경' : '끌어서 순서 변경 · 커밋을 놓으면 이 프로젝트로'}
               >
                 {grip}
                 <PDot color={pp.color} />
                 {pp.name}
+                {active === pp.id && (
+                  <>
+                    <span
+                      className="iconbtn"
+                      style={{ marginLeft: 4, fontSize: 12 }}
+                      title="이름 수정"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); renameProjectPrompt(pp.id, pp.name); }}
+                    >
+                      ✎
+                    </span>
+                    <span
+                      className="iconbtn"
+                      style={{ fontSize: 12 }}
+                      title="프로젝트 삭제"
+                      onPointerDown={(e) => e.stopPropagation()}
+                      onClick={(e) => { e.stopPropagation(); deleteProjectConfirm(pp.id, pp.name); }}
+                    >
+                      ✕
+                    </span>
+                  </>
+                )}
               </div>
             );
           })}

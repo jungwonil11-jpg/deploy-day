@@ -56,6 +56,7 @@ interface AppStore {
   // 프로젝트
   addProject: (name: string) => void;
   renameProject: (id: string, name: string) => void;
+  deleteProject: (id: string) => void; // 프로젝트 + 그 프로젝트의 커밋/백로그 함께 삭제
   reorderProjects: (ids: string[]) => void;
   reviveProject: (id: string) => void;
 
@@ -199,6 +200,16 @@ export const useApp = create<AppStore>((set, get) => {
       if (!v) return;
       const s = get().s;
       commit({ ...s, projects: s.projects.map((p) => (p.id === id ? { ...p, name: v } : p)) });
+    },
+    deleteProject: (id) => {
+      const s = get().s;
+      commit({
+        ...s,
+        projects: s.projects.filter((p) => p.id !== id),
+        todos: s.todos.filter((t) => t.project !== id), // 이 프로젝트의 커밋도 함께
+        backlog: s.backlog.filter((b) => b.project !== id),
+      });
+      if (get().activeProject === id) set({ activeProject: 'all' });
     },
     reorderProjects: (ids) => {
       const s = get().s;

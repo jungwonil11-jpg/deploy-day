@@ -10,6 +10,8 @@ export interface PersonaUI {
   todoEdit: string;
   projAdd: string;
   projAddHint: string;
+  projRename: string;
+  projDelAsk: string; // {name} {n}
   shipTitle: string; // {ver}
   shipHint: string;
   emptyProj: string;
@@ -104,6 +106,8 @@ export const kPersonas: Persona[] = [
       todoEdit: '커밋 수정하기',
       projAdd: '새 프로젝트',
       projAddHint: '이름 (예: 성경썰앱)',
+      projRename: '프로젝트 이름 수정',
+      projDelAsk: "'{name}' 프로젝트를 삭제할까요? 이 프로젝트의 커밋 {n}개도 함께 사라져요. 되돌릴 수 없어요.",
       shipTitle: '{ver} 배포하기',
       shipHint: '한 줄 요약 (선택)',
       emptyProj: '이 프로젝트엔 아직 커밋이 없어요',
@@ -166,6 +170,8 @@ export const kPersonas: Persona[] = [
       todoEdit: '커밋 수정',
       projAdd: '새 프로젝트',
       projAddHint: '이름 (예: 성경썰앱)',
+      projRename: '프로젝트 이름 수정',
+      projDelAsk: "'{name}' 삭제함? 이 프로젝트 커밋 {n}개도 같이 날아감. 못 되돌림.",
       shipTitle: '{ver} 배포',
       shipHint: '한 줄 요약 (선택)',
       emptyProj: '이 프로젝트엔 커밋 없음',
@@ -228,6 +234,8 @@ export const kPersonas: Persona[] = [
       todoEdit: '커밋 수정',
       projAdd: '새 프로젝트',
       projAddHint: '이름 (예: 성경썰앱)',
+      projRename: '프로젝트 이름 변경',
+      projDelAsk: "'{name}' 프로젝트를 삭제하시겠습니까? 이 프로젝트의 커밋 {n}개도 함께 삭제됩니다. 되돌릴 수 없습니다.",
       shipTitle: '{ver} 배포',
       shipHint: '한 줄 요약 (선택)',
       emptyProj: '이 프로젝트에 등록된 커밋이 없습니다',
