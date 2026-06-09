@@ -1,11 +1,12 @@
 // 도메인 모델 + 헬퍼 — v1(Flutter models.dart) 포팅.
 // JSON 키는 v1과 동일 유지 (deployday_v1 백업 호환).
 
+export type Lang = 'ko' | 'en';
+
 export interface Project {
   id: string;
   name: string;
   color: string; // '#d97757' 형식
-  done: boolean; // 졸업 여부
 }
 
 export interface Todo {
@@ -33,7 +34,6 @@ export interface Release {
   minor: number;
   title: string;
   date: string; // yyyy-MM-dd
-  graduated: string[];
   notes: ReleaseNote[];
 }
 
@@ -52,6 +52,7 @@ export interface Memo {
 export interface AppState {
   name: string; // 배포자 이름
   persona: string; // 말투 페르소나 id
+  lang: Lang; // UI 언어 (ko/en)
   dark: boolean; // 다크모드
   shipDay: number; // 배포 요일 (1=월 .. 7=일)
   major: number;
@@ -80,6 +81,7 @@ export const kMemoLightDefault = 6;
 export const seedState = (): AppState => ({
   name: '',
   persona: 'sunny',
+  lang: 'ko',
   dark: true,
   shipDay: 4, // 목요일
   major: 1,
@@ -121,6 +123,16 @@ export const kDayEn = [
   '', 'monday', 'tuesday', 'wednesday', 'thursday',
   'friday', 'saturday', 'sunday',
 ];
+export const kDayEnCap = [
+  '', 'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+  'Friday', 'Saturday', 'Sunday',
+];
+// 언어별 "요일" 표기 — ko: "목요일", en: "Thursday"
+export const dayName = (lang: Lang, d: number) =>
+  lang === 'en' ? kDayEnCap[d] : `${kDayKr[d]}요일`;
+// 요일 토큰 — 페르소나 문구의 {day} 치환용. ko: "목"(문구가 '요일' 붙임), en: "Thursday"
+export const dayTok = (lang: Lang, d: number) =>
+  lang === 'en' ? kDayEnCap[d] : kDayKr[d];
 
 // JS getDay(0=일~6=토) → ISO weekday(1=월~7=일)
 const isoWeekday = (): number => {
@@ -145,6 +157,7 @@ export function normalizeState(j: any): AppState {
   return {
     name: typeof j.name === 'string' ? j.name : '',
     persona: typeof j.persona === 'string' ? j.persona : 'victor',
+    lang: j.lang === 'en' ? 'en' : 'ko',
     dark: typeof j.dark === 'boolean' ? j.dark : true,
     shipDay: typeof j.shipDay === 'number' ? j.shipDay : 4,
     major: j.major ?? 1,
@@ -154,7 +167,6 @@ export function normalizeState(j: any): AppState {
       id: p.id,
       name: p.name ?? '',
       color: migrateColor(p.color ?? kPalette[0]),
-      done: p.done === true,
     })),
     todos: (j.todos ?? []).map((t: any): Todo => ({
       id: t.id,
@@ -173,7 +185,6 @@ export function normalizeState(j: any): AppState {
       minor: r.minor ?? 0,
       title: r.title ?? '',
       date: r.date ?? '',
-      graduated: r.graduated ?? [],
       notes: (r.notes ?? []).map((n: any): ReleaseNote => ({
         text: n.text ?? '',
         done: n.done === true,
@@ -196,8 +207,10 @@ export function normalizeState(j: any): AppState {
 
 /* ---------- 파생 헬퍼 ---------- */
 
-export const projName = (s: AppState, pid: string | null): string =>
-  pid === null ? '미분류' : s.projects.find((p) => p.id === pid)?.name ?? '미분류';
+export const projName = (s: AppState, pid: string | null): string => {
+  const unfiled = s.lang === 'en' ? 'Unfiled' : '미분류';
+  return pid === null ? unfiled : s.projects.find((p) => p.id === pid)?.name ?? unfiled;
+};
 
 export const projColor = (s: AppState, pid: string | null): string =>
   pid === null ? '#5C5C5C' : s.projects.find((p) => p.id === pid)?.color ?? '#5C5C5C';

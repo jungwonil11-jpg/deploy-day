@@ -3,7 +3,8 @@ import { useEffect } from 'react';
 import { useApp } from './store';
 import { personaOf, pfmt } from './persona';
 // personaOf 사용 (App 내 여러 곳)
-import { isShipDay, daysToShip, verStr, kDayKr, kDayEn } from './types';
+import { isShipDay, daysToShip, verStr, dayName, dayTok, kDayEn } from './types';
+import { useUI, fmt } from './i18n';
 import { listen } from '@tauri-apps/api/event';
 import type { Memo } from './types';
 import { SprintTab } from './tabs/SprintTab';
@@ -22,6 +23,7 @@ export default function App() {
   const setTab = useApp((st) => st.setTab);
   const setName = useApp((st) => st.setName);
   const p = personaOf(s);
+  const L = useUI();
 
   // 다크/라이트 → :root data-theme
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function App() {
   // 첫 실행 이름 온보딩 → 튜토리얼 자동 시작 (인앱 다이얼로그)
   useEffect(() => {
     if (!s.name) {
-      uiPrompt('✻ Welcome to deploy-day!', '', p.onboard).then((v) => {
+      uiPrompt(L.welcomeTitle, '', p.onboard).then((v) => {
         if (v) {
           setName(v);
           setTimeout(() => useTutorial.getState().start(), 400);
@@ -69,7 +71,7 @@ export default function App() {
   const today = isShipDay(s.shipDay);
   const dd = daysToShip(s.shipDay);
   const doneN = s.todos.filter((t) => t.done).length;
-  const v = { streak: s.streak, ver: verStr(s.major, s.minor + 1), d: dd, day: kDayKr[s.shipDay] };
+  const v = { streak: s.streak, ver: verStr(s.major, s.minor + 1), d: dd, day: dayTok(s.lang, s.shipDay) };
   let aColor = 'var(--accent)';
   let head: string;
   let rest: string;
@@ -96,21 +98,21 @@ export default function App() {
                 style={{ fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
                 onClick={() => { uiPrompt(p.ui.nameChange, s.name).then((n) => { if (n) setName(n); }); }}
               >
-                Welcome back {s.name || '...'}!
+                {fmt(L.welcomeBack, { name: s.name || '...' })}
               </div>
               <div data-tut="clawd"><ClawdLogo foundMsg={p.ui.clawd} /></div>
-              <div className="mono c-dim" style={{ fontSize: 12 }}>인생 배포 · 매주 {kDayKr[s.shipDay]}요일</div>
+              <div className="mono c-dim" style={{ fontSize: 12 }}>{fmt(L.lifeDeploy, { day: dayName(s.lang, s.shipDay) })}</div>
               <div className="mono" style={{ fontSize: 12, marginTop: 4 }} data-tut="streak">
-                streak {s.streak}주 · <span className="c-ship">● LIVE</span>
+                {fmt(L.streakWeeks, { n: s.streak })} · <span className="c-ship">● LIVE</span>
               </div>
             </div>
             <div style={{ flex: 6 }}>
-              <div className="mono c-accent" style={{ fontSize: 13, fontWeight: 700 }}>Tips for getting started</div>
-              <div className="kr" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{pfmt(p.tips, { day: kDayKr[s.shipDay] })}</div>
+              <div className="mono c-accent" style={{ fontSize: 13, fontWeight: 700 }}>{L.tipsHead}</div>
+              <div className="kr" style={{ fontSize: 13, marginTop: 6, lineHeight: 1.5 }}>{pfmt(p.tips, { day: dayTok(s.lang, s.shipDay) })}</div>
               <div style={{ height: 12, borderBottom: '1px solid var(--accent)', marginBottom: 12 }} />
-              <div className="mono c-accent" style={{ fontSize: 13, fontWeight: 700 }}>What's new</div>
+              <div className="mono c-accent" style={{ fontSize: 13, fontWeight: 700 }}>{L.whatsNew}</div>
               {recent.length === 0 ? (
-                <div className="kr c-dim" style={{ fontSize: 13, marginTop: 6 }}>아직 릴리즈 없음 — 첫 배포가 첫 뉴스임</div>
+                <div className="kr c-dim" style={{ fontSize: 13, marginTop: 6 }}>{L.noReleaseYet}</div>
               ) : (
                 recent.map((r, i) => (
                   <div key={i} className="kr" style={{ fontSize: 13, marginTop: 2 }}>
@@ -145,15 +147,15 @@ export default function App() {
       {/* status line — 고정 오버레이가 아니라 실제 푸터(스크롤 영역 아래) */}
       <div className="statusline" data-tut="statusline">
         <div className="row1">
-          <span className="c-blue" style={{ fontWeight: 700 }}>deploy-day {verStr(s.major, s.minor)} (1주 cycle)</span>
-          <span className="c-dimmer"> · streak {s.streak}주 · </span>
-          <span className="c-magenta" style={{ fontWeight: 700 }}>main</span>
+          <span className="c-blue" style={{ fontWeight: 700 }}>deploy-day {verStr(s.major, s.minor)} {L.statusCycle}</span>
+          <span className="c-dimmer"> · {fmt(L.streakWeeks, { n: s.streak })} · </span>
+          <span className="c-magenta" style={{ fontWeight: 700 }}>{L.statusMain}</span>
           <span className="spacer" />
         </div>
         <div style={{ marginTop: 3 }}>
-          <span className="c-pink" style={{ fontWeight: 700 }}>⏵⏵ deploy mode on</span>
-          <span className="c-pink"> (every {kDayEn[s.shipDay]})</span>
-          <span className="c-dimmer">{today ? ' · 🚀 today' : ` · D-${daysToShip(s.shipDay)} for ship`}</span>
+          <span className="c-pink" style={{ fontWeight: 700 }}>{L.deployModeOn}</span>
+          <span className="c-pink"> {fmt(L.statusEvery, { day: kDayEn[s.shipDay] })}</span>
+          <span className="c-dimmer">{today ? L.statusToday : fmt(L.statusDShip, { n: daysToShip(s.shipDay) })}</span>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 import { useApp } from '../store';
 import { personaOf } from '../persona';
 import { projColor } from '../types';
+import { useUI } from '../i18n';
 import { CliBox, PDot, Empty, PromptInput } from '../ui';
 
 export function BacklogTab() {
@@ -10,10 +11,11 @@ export function BacklogTab() {
   const deleteBacklog = useApp((st) => st.deleteBacklog);
   const pullBacklog = useApp((st) => st.pullBacklog);
   const p = personaOf(s);
+  const L = useUI();
 
   return (
-    <CliBox title="backlog · 다음 버전에 할 거 미리 메모">
-      <PromptInput placeholder="다음에 하고 싶은 거" button="backlog" onAdd={addBacklog} />
+    <CliBox title={L.backlogTitle}>
+      <PromptInput placeholder={L.backlogPh} button="backlog" onAdd={addBacklog} />
       {s.backlog.length === 0 ? (
         <Empty text={p.emptyBacklog} />
       ) : (

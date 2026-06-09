@@ -2,6 +2,7 @@
 import { useApp } from '../store';
 import { personaOf } from '../persona';
 import { kMemoColors } from '../types';
+import { useUI } from '../i18n';
 import { CliBox, Empty } from '../ui';
 import { uiConfirm } from '../dialogs';
 
@@ -11,11 +12,12 @@ export function MemoTab() {
   const openMemo = useApp((st) => st.openMemo);
   const deleteMemo = useApp((st) => st.deleteMemo);
   const p = personaOf(s);
+  const L = useUI();
 
   return (
-    <CliBox title="memo · 바탕화면 포스트잇 (항상 위)">
+    <CliBox title={L.memoTitle}>
       <div className="row" style={{ borderTop: 'none', justifyContent: 'space-between' }}>
-        <span className="mono c-dimmer" style={{ fontSize: 11 }}>끌어서 옮기면 가장자리·다른 메모에 자석처럼 붙음</span>
+        <span className="mono c-dimmer" style={{ fontSize: 11 }}>{L.memoHint}</span>
         <span className="chip mono" onClick={() => void newMemo()}>+ memo</span>
       </div>
       {s.memos.length === 0 ? (
@@ -23,7 +25,7 @@ export function MemoTab() {
       ) : (
         s.memos.map((m) => {
           const [bg] = kMemoColors[Math.min(m.color, kMemoColors.length - 1)];
-          const preview = m.text.trim() ? m.text.trim().split('\n')[0] : '(빈 메모)';
+          const preview = m.text.trim() ? m.text.trim().split('\n')[0] : L.emptyMemoPrev;
           return (
             <div key={m.id} className="row">
               <span className="pdot" style={{ background: bg, border: '1px solid var(--border)' }} />
@@ -31,13 +33,13 @@ export function MemoTab() {
                 {preview}
               </span>
               {m.open ? (
-                <span className="mono c-ship" style={{ fontSize: 11 }}>떠있음</span>
+                <span className="mono c-ship" style={{ fontSize: 11 }}>{L.memoOpen}</span>
               ) : (
-                <span className="iconbtn c-accent" onClick={() => void openMemo(m.id)}>→ 열기</span>
+                <span className="iconbtn c-accent" onClick={() => void openMemo(m.id)}>{L.memoOpenBtn}</span>
               )}
               <span
                 className="iconbtn"
-                onClick={() => uiConfirm(p.ui.memoDelAsk, '삭제').then((ok) => { if (ok) void deleteMemo(m.id); })}
+                onClick={() => uiConfirm(p.ui.memoDelAsk, L.delLabel).then((ok) => { if (ok) void deleteMemo(m.id); })}
               >
                 ✕
               </span>

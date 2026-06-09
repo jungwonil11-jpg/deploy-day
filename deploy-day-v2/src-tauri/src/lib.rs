@@ -5,6 +5,17 @@ use tauri::{
 };
 use tauri_plugin_autostart::{MacosLauncher, ManagerExt};
 use tauri_plugin_notification::NotificationExt;
+use tauri_plugin_store::StoreExt;
+
+// 저장된 상태(deployday.json)에서 UI 언어를 읽어 트레이가 같은 언어로 뜨게 한다.
+// (시작 시 1회 — 언어 토글 즉시반영은 안 하지만 lang 은 영속이라 다음 실행에 반영됨)
+fn tray_is_en(app: &tauri::AppHandle) -> bool {
+    app.store("deployday.json")
+        .ok()
+        .and_then(|s| s.get("state"))
+        .and_then(|st| st.get("lang").and_then(|v| v.as_str()).map(|x| x == "en"))
+        .unwrap_or(false)
+}
 
 fn show_main(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
@@ -12,6 +23,18 @@ fn show_main(app: &tauri::AppHandle) {
         let _ = w.unminimize();
         let _ = w.set_focus();
     }
+}
+
+// 백업 파일 쓰기/읽기 — dialog 플러그인이 고른 절대경로를 그대로 std::fs 로 처리.
+// (fs 플러그인 scope 설정을 피하고 임의 경로를 안전하게 다루기 위해 커스텀 커맨드 사용)
+#[tauri::command]
+fn save_text_file(path: String, contents: String) -> Result<(), String> {
+    std::fs::write(&path, contents).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn read_text_file(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| e.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -22,20 +45,48 @@ pub fn run() {
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![save_text_file, read_text_file])
         .setup(|app| {
             let handle = app.handle();
             let autostart_on = handle.autolaunch().is_enabled().unwrap_or(false);
 
+            // 트레이 언어 — 저장된 lang 따라 ko/en
+            let is_en = tray_is_en(handle);
+            let (l_open, l_memo, l_pin, l_auto, l_quit, l_tip, n_title, n_body) = if is_en {
+                (
+                    "Open",
+                    "New note",
+                    "Always on top",
+                    "Run at Windows startup",
+                    "Quit",
+                    "deploy-day — ship every week",
+                    "deploy-day",
+                    "Still running in the tray. Click the tray icon to reopen.",
+                )
+            } else {
+                (
+                    "열기",
+                    "새 메모",
+                    "항상 위에 고정",
+                    "윈도우 시작 시 실행",
+                    "종료",
+                    "deploy-day — 매주 배포일",
+                    "deploy-day",
+                    "트레이에서 계속 실행 중이에요. 트레이 아이콘을 누르면 다시 열려요.",
+                )
+            };
+
             // 트레이 메뉴
-            let open_i = MenuItemBuilder::with_id("open", "열기").build(app)?;
-            let memo_i = MenuItemBuilder::with_id("new_memo", "새 메모").build(app)?;
-            let pin_i = CheckMenuItemBuilder::with_id("pin", "항상 위에 고정")
+            let open_i = MenuItemBuilder::with_id("open", l_open).build(app)?;
+            let memo_i = MenuItemBuilder::with_id("new_memo", l_memo).build(app)?;
+            let pin_i = CheckMenuItemBuilder::with_id("pin", l_pin)
                 .checked(false)
                 .build(app)?;
-            let auto_i = CheckMenuItemBuilder::with_id("autostart", "윈도우 시작 시 실행")
+            let auto_i = CheckMenuItemBuilder::with_id("autostart", l_auto)
                 .checked(autostart_on)
                 .build(app)?;
-            let quit_i = MenuItemBuilder::with_id("quit", "종료").build(app)?;
+            let quit_i = MenuItemBuilder::with_id("quit", l_quit).build(app)?;
             let sep1 = PredefinedMenuItem::separator(app)?;
             let sep2 = PredefinedMenuItem::separator(app)?;
             let menu = MenuBuilder::new(app)
@@ -49,7 +100,7 @@ pub fn run() {
 
             TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().unwrap().clone())
-                .tooltip("deploy-day — 매주 배포일")
+                .tooltip(l_tip)
                 .menu(&menu)
                 .show_menu_on_left_click(false)
                 .on_menu_event(move |app, event| match event.id().as_ref() {
@@ -106,8 +157,8 @@ pub fn run() {
                             let _ = notify_handle
                                 .notification()
                                 .builder()
-                                .title("deploy-day")
-                                .body("트레이에서 계속 실행 중이에요. 트레이 아이콘을 누르면 다시 열려요.")
+                                .title(n_title)
+                                .body(n_body)
                                 .show();
                         }
                     }

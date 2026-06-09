@@ -13,11 +13,13 @@ import {
   isShipDay,
   daysToShip,
   verStr,
-  kDayKr,
+  dayTok,
   type Todo,
 } from '../types';
+import { useUI, fmt } from '../i18n';
 import { CliBox, PDot, Empty, PromptInput } from '../ui';
 import { uiPrompt, uiAlert, uiConfirm } from '../dialogs';
+import { useTutorial, TUT_STEPS } from '../tutorial';
 
 const NULL_PID = '∅'; // 미분류(null) 프로젝트를 data 속성에 표기
 const DRAG_THRESHOLD = 5; // 이 픽셀 넘게 움직여야 드래그로 인정(아니면 클릭)
@@ -47,6 +49,7 @@ export function SprintTab() {
   const reorderProjects = useApp((st) => st.reorderProjects);
   const ship = useApp((st) => st.ship);
   const p = personaOf(s);
+  const L = useUI();
 
   const [drag, setDrag] = useState<DragState | null>(null);
   const downRef = useRef<Down | null>(null);
@@ -84,7 +87,7 @@ export function SprintTab() {
     prevPos.current.forEach((_, key) => { if (!elRefs.current.has(key)) prevPos.current.delete(key); });
   });
 
-  const target = active === 'all' ? '미분류' : projName(s, active);
+  const target = active === 'all' ? L.unfiled : projName(s, active);
   const editTodoPrompt = (t: Todo) => { uiPrompt(p.ui.todoEdit, t.text).then((v) => { if (v) editTodo(t.id, v); }); };
   const addProjectPrompt = () => { uiPrompt(p.ui.projAdd, '', p.ui.projAddHint).then((v) => { if (v) addProject(v); }); };
   const renameProjectPrompt = (id: string, name: string) => {
@@ -92,7 +95,7 @@ export function SprintTab() {
   };
   const deleteProjectConfirm = (id: string, name: string) => {
     const n = s.todos.filter((t) => t.project === id).length; // 함께 삭제될 커밋 수
-    uiConfirm(pfmt(p.ui.projDelAsk, { name, n }), '삭제').then((ok) => { if (ok) deleteProject(id); });
+    uiConfirm(pfmt(p.ui.projDelAsk, { name, n }), L.delLabel).then((ok) => { if (ok) deleteProject(id); });
   };
 
   const hit = (x: number, y: number, sel: string): HTMLElement | null =>
@@ -246,17 +249,20 @@ export function SprintTab() {
   const ready = isShipDay(s.shipDay);
   const doneN = s.todos.filter((t) => t.done).length;
   const shipLabel = ready
-    ? `⏵⏵ ship ${verStr(s.major, s.minor + 1)} · ${doneN}건 완료`
-    : `$ ship — D-${daysToShip(s.shipDay)} · ${doneN}/${s.todos.length} 완료`;
+    ? fmt(L.shipReady, { ver: verStr(s.major, s.minor + 1), n: doneN })
+    : fmt(L.shipWait, { d: daysToShip(s.shipDay), done: doneN, total: s.todos.length });
 
   const onShip = async () => {
-    if (!ready) { uiAlert(pfmt(p.shipNotReady, { day: kDayKr[s.shipDay] })); return; }
+    // 튜토리얼 ship 단계에선 실제 배포 대신 단계만 진행(연습)
+    const tut = useTutorial.getState();
+    if (tut.step !== null && TUT_STEPS[tut.step]?.signal === 'ship') { tut.signal('ship'); return; }
+    if (!ready) { uiAlert(pfmt(p.shipNotReady, { day: dayTok(s.lang, s.shipDay) })); return; }
     const title = (await uiPrompt(pfmt(p.ui.shipTitle, { ver: verStr(s.major, s.minor + 1) }), '', p.ui.shipHint)) ?? '';
-    const rel = ship(title, []);
+    const rel = ship(title);
     uiAlert(pfmt(p.shipDone, { ver: verStr(rel.major, rel.minor) }));
   };
 
-  const projects = s.projects.filter((pp) => !pp.done);
+  const projects = s.projects;
   const projIds = projects.map((pp) => pp.id);
   const projLive = drag?.kind === 'project' ? drag.order : projIds;
   const projById = new Map(projects.map((pp) => [pp.id, pp]));
@@ -269,9 +275,9 @@ export function SprintTab() {
           data-projchip
           data-projid={NULL_PID}
           onClick={() => setActive('all')}
-          title="여기 커밋을 놓으면 미분류로"
+          title={L.allChipTip}
         >
-          전체
+          {L.all}
         </div>
         {projLive
           .map((id) => projById.get(id))
@@ -290,7 +296,7 @@ export function SprintTab() {
                 onPointerUp={onUp}
                 onClick={guard(() => { if (active === pp.id) renameProjectPrompt(pp.id, pp.name); else setActive(pp.id); })}
                 style={{ cursor: 'grab', touchAction: 'none', ...(dragging ? { background: 'var(--panel2)', boxShadow: '0 4px 14px rgba(0,0,0,.4)', zIndex: 3 } : null) }}
-                title={active === pp.id ? '한 번 더 누르면 이름 수정 · 끌어서 순서 변경' : '끌어서 순서 변경 · 커밋을 놓으면 이 프로젝트로'}
+                title={active === pp.id ? L.projChipActiveTip : L.projChipTip}
               >
                 {grip}
                 <PDot color={pp.color} />
@@ -300,7 +306,7 @@ export function SprintTab() {
                     <span
                       className="iconbtn"
                       style={{ marginLeft: 4, fontSize: 12 }}
-                      title="이름 수정"
+                      title={L.renameTip}
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); renameProjectPrompt(pp.id, pp.name); }}
                     >
@@ -309,7 +315,7 @@ export function SprintTab() {
                     <span
                       className="iconbtn"
                       style={{ fontSize: 12 }}
-                      title="프로젝트 삭제"
+                      title={L.deleteTip}
                       onPointerDown={(e) => e.stopPropagation()}
                       onClick={(e) => { e.stopPropagation(); deleteProjectConfirm(pp.id, pp.name); }}
                     >
@@ -320,14 +326,14 @@ export function SprintTab() {
               </div>
             );
           })}
-        <div className="chip mono dashed" data-tut="add-project" onClick={addProjectPrompt}>+ 프로젝트</div>
+        <div className="chip mono dashed" data-tut="add-project" onClick={addProjectPrompt}>{L.addProject}</div>
       </div>
 
       <div style={{ height: 14 }} />
 
-      <CliBox title="sprint · 다음 배포까지 쌓을 커밋">
+      <CliBox title={L.sprintTitle}>
         <div data-tut="commit-input">
-          <PromptInput placeholder={`[${target}] 할 거 입력 (Enter)`} button="commit" onAdd={addTodo} />
+          <PromptInput placeholder={fmt(L.addTaskPh, { target })} button="commit" onAdd={addTodo} />
         </div>
         <div data-tut="todo-list">{rows}</div>
       </CliBox>

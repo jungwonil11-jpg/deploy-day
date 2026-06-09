@@ -1,6 +1,7 @@
-// 설정 화면 문서 — 스토어 심사 대비. v1 legal.dart 포팅.
+// 설정 화면 문서 — 스토어 심사 대비. v1 legal.dart 포팅. 언어별(ko/en) 제공.
+import type { Lang } from './types';
 
-export const kManual = `1. 프로젝트 만들기
+const kManualKo = `1. 프로젝트 만들기
 /sprint 의 [+ 프로젝트]로 진행 중인 일(공부, 운동, 사이드 프로젝트 등)을 등록합니다.
 
 2. 커밋 쌓기
@@ -15,9 +16,6 @@ export const kManual = `1. 프로젝트 만들기
 5. streak 지키기
 한 건이라도 완료하고 배포하면 streak이 1주 쌓입니다. 빈손으로 배포하면 streak이 끊깁니다.
 
-6. 프로젝트 졸업
-끝난 프로젝트는 배포할 때 졸업시킬 수 있습니다. 졸업한 프로젝트는 /changelog 명예의 전당에 남습니다.
-
 팁
 ·  항목 텍스트를 누르면 수정
 ·  배너의 "매주 ○요일"을 누르면 배포 요일 변경
@@ -25,7 +23,29 @@ export const kManual = `1. 프로젝트 만들기
 ·  /memo 는 바탕화면 포스트잇 — 끌어서 옮기면 화면 가장자리·다른 메모에 자석처럼 붙습니다
 ·  데이터는 기기에만 저장됩니다 — export 로 직접 백업하세요`;
 
-export const kAbout = `deploy-day는 인생을 소프트웨어처럼 배포하는 todo 앱입니다.
+const kManualEn = `1. Create a project
+In /sprint, use [+ project] to register something you're working on (study, workout, side project, etc.).
+
+2. Stack commits
+Add this week's tasks via the ❯ input line. Adding while a project chip is selected files the task under that project.
+
+3. Check things off
+Tap ☐ to complete a finished task. Completed tasks move to the bottom of the group.
+
+4. Ship on ship day
+The ship button turns on when ship day arrives (Thursday by default). Done items are frozen into the release notes; unfinished ones carry over to next week with a rollback tag.
+
+5. Keep your streak
+Ship with at least one item done and your streak gains a week. Ship empty-handed and the streak breaks.
+
+Tips
+·  Tap an item's text to edit it
+·  Tap "every ___day" on the banner to change ship day
+·  /backlog is a stash for later tasks — pull them into the sprint
+·  /memo is a desktop sticky note — drag it to snap to screen edges & other notes
+·  Data is stored only on your device — back it up yourself with export`;
+
+const kAboutKo = `deploy-day는 인생을 소프트웨어처럼 배포하는 todo 앱입니다.
 
 ·  일주일이 하나의 스프린트입니다
 ·  할 일은 커밋처럼 쌓습니다
@@ -33,7 +53,6 @@ export const kAbout = `deploy-day는 인생을 소프트웨어처럼 배포하�
 ·  완료한 일은 릴리즈노트에 박제되고,
    못한 일은 다음 스프린트로 롤백됩니다
 ·  연속 배포 주수가 streak으로 쌓입니다
-·  끝낸 프로젝트는 졸업해서 명예의 전당에 남습니다
 
 핵심 철학: 완벽한 계획보다 주기적인 배포.
 거창한 결심 대신 매주 작게라도 버전을 올리는 것.
@@ -41,7 +60,22 @@ v1.0의 인생도 매주 0.1씩 오릅니다.
 
 UI는 Claude Code CLI에 대한 오마주입니다.`;
 
-export const kPrivacyPolicy = `시행일: 2026-06-08
+const kAboutEn = `deploy-day is a todo app that ships your life like software.
+
+·  One week is one sprint
+·  Tasks stack up like commits
+·  You ship the week on a set day (Thursday by default)
+·  Done items are frozen into the release notes,
+   unfinished ones roll over to the next sprint
+·  Consecutive ship weeks accumulate as a streak
+
+Core philosophy: periodic shipping over a perfect plan.
+Instead of grand resolutions, bump your version a little every week.
+A v1.0 life goes up 0.1 each week too.
+
+The UI is an homage to the Claude Code CLI.`;
+
+const kPrivacyKo = `시행일: 2026-06-08
 
 1. 개요
 deploy-day(이하 "앱")는 사용자의 개인정보를 수집·전송·판매하지 않는 것을 원칙으로 합니다.
@@ -67,7 +101,33 @@ deploy-day(이하 "앱")는 사용자의 개인정보를 수집·전송·판매�
 8. 변경 고지
 본 방침이 변경되는 경우 앱 업데이트 노트(릴리즈 노트)를 통해 고지합니다.`;
 
-export const kTerms = `시행일: 2026-06-08
+const kPrivacyEn = `Effective date: 2026-06-08
+
+1. Overview
+deploy-day (the "app") is built on the principle of not collecting, transmitting, or selling your personal information.
+
+2. Information collected
+The app collects no personal information to any server. All data you enter (name, tasks, backlog, release history, notes, settings) is stored only in your device's local storage.
+
+3. Network communication
+The app performs no network communication. It runs no server of its own, and all resources are bundled into the app, so it works fully without an internet connection.
+
+4. Third parties and ads
+There is no provision of personal information to third parties. No ad SDKs, analytics tools, or tracking technologies are used.
+
+5. Data retention and deletion
+All data is deleted when the app is uninstalled. You can also wipe everything with the in-app reset feature. You are responsible for keeping any backup created via export.
+
+6. Children's privacy
+Because the app collects no personal information, it does not collect children's personal information either.
+
+7. Contact
+Privacy inquiries: jungwonil11@gmail.com
+
+8. Changes
+If this policy changes, it will be announced through the app's update notes (release notes).`;
+
+const kTermsKo = `시행일: 2026-06-08
 
 1. 목적
 본 약관은 deploy-day(이하 "앱")의 이용 조건을 규정합니다. 앱을 설치·사용하면 본 약관에 동의한 것으로 봅니다.
@@ -89,3 +149,31 @@ export const kTerms = `시행일: 2026-06-08
 
 7. 문의
 jungwonil11@gmail.com`;
+
+const kTermsEn = `Effective date: 2026-06-08
+
+1. Purpose
+These terms govern the conditions of using deploy-day (the "app"). Installing or using the app constitutes agreement to these terms.
+
+2. Nature of the service
+The app is a free personal productivity tool. It works without account signup, login, or server integration.
+
+3. Data responsibility
+All data is stored only on your device. Data loss from a lost or broken device or app deletion cannot be recovered, so please back up important data yourself with the export feature.
+
+4. Use restrictions
+You may not use the app in any way that violates applicable law.
+
+5. Disclaimer
+The app is provided "AS IS." To the maximum extent permitted by applicable law, the maker is not liable for any direct or indirect damages arising from use or inability to use the app.
+
+6. Changes to terms
+If the terms change, it will be announced through the app's update notes (release notes).
+
+7. Contact
+jungwonil11@gmail.com`;
+
+export const kManual: Record<Lang, string> = { ko: kManualKo, en: kManualEn };
+export const kAbout: Record<Lang, string> = { ko: kAboutKo, en: kAboutEn };
+export const kPrivacyPolicy: Record<Lang, string> = { ko: kPrivacyKo, en: kPrivacyEn };
+export const kTerms: Record<Lang, string> = { ko: kTermsKo, en: kTermsEn };

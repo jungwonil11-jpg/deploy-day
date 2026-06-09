@@ -1,55 +1,90 @@
-// 인터랙티브 튜토리얼 상태 + 단계 정의 (Zustand).
-// 코치마크: 타겟 DOM에 구멍 뚫고 설명. 일부 단계는 "직접 해보면" 자동 진행,
-// 나머지는 [다음]. 건너뛰기(이 단계만) ↔ 그만하기(완전 종료) 분리.
+// 인터랙티브 튜토리얼 — 단계마다 "실제 액션"을 유도하고, 그 액션이 감지되면 자동 진행.
+// 진짜로 할 게 없는 단계(intro·streak·done)만 [다음] 버튼을 허용한다.
+// 진행 트리거 3종: watch(상태 변화) · awaitTab(탭 이동) · signal(특정 클릭).
 import { create } from 'zustand';
 import { useApp } from './store';
+import type { AppState } from './types';
 
-// 단계: key(페르소나 문구) + targetId(스포트라이트 대상) + tab(필요 탭) +
-//       auto(상태변화로 자동완료 판정 함수) — auto 없으면 [다음] 버튼.
+// 진입 시점 스냅샷 — 증가/변화 감지 기준값
+interface Base {
+  projects: number;
+  todos: number;
+  done: number;
+  backlog: number;
+  order: string; // 커밋 배열 순서 서명 (reorder 감지: 순서 민감)
+  assign: string; // 커밋→프로젝트 배정 서명 (move 감지: 순서 무관)
+}
+
+const orderSig = (s: AppState) => s.todos.map((t) => t.id).join(',');
+const assignSig = (s: AppState) =>
+  s.todos.map((t) => `${t.id}:${t.project ?? ''}`).sort().join('|');
+
+const snapshot = (s: AppState): Base => ({
+  projects: s.projects.length,
+  todos: s.todos.length,
+  done: s.todos.filter((t) => t.done).length,
+  backlog: s.backlog.length,
+  order: orderSig(s),
+  assign: assignSig(s),
+});
+
+const emptyBase: Base = { projects: 0, todos: 0, done: 0, backlog: 0, order: '', assign: '' };
+
 export interface TutStep {
-  key: string;
-  targetId?: string; // data-tut 속성값
-  tab?: number; // 진입 시 전환할 탭 (0 sprint,1 backlog,2 changelog,3 memo,4 config)
-  auto?: (before: number, now: number) => boolean; // (이전 카운트, 현재 카운트)
-  count?: () => number; // auto 판정용 카운트 소스
+  key: string; // 페르소나 문구 키
+  targetId?: string; // 스포트라이트 대상 (data-tut)
+  tab?: number; // 진입 시 강제 전환할 탭 (sprint 단계들만)
+  watch?: (s: AppState, base: Base) => boolean; // 상태 변화로 자동완료
+  awaitTab?: number; // 사용자가 이 탭으로 직접 이동하면 완료
+  signal?: string; // 이 시그널(특정 클릭)이 오면 완료
 }
 
 export const TUT_STEPS: TutStep[] = [
-  { key: 'intro' },
-  { key: 'project', targetId: 'add-project', tab: 0, count: () => useApp.getState().s.projects.length, auto: (b, n) => n > b },
-  { key: 'commit', targetId: 'commit-input', tab: 0, count: () => useApp.getState().s.todos.length, auto: (b, n) => n > b },
-  { key: 'check', targetId: 'todo-list', tab: 0, count: () => useApp.getState().s.todos.filter((t) => t.done).length, auto: (b, n) => n > b },
-  { key: 'reorder', targetId: 'todo-list', tab: 0 },
-  { key: 'move', targetId: 'project-chips', tab: 0 },
-  { key: 'backlog', targetId: 'tab-1', tab: 1 },
-  { key: 'ship', targetId: 'ship-bar', tab: 0 },
-  { key: 'changelog', targetId: 'tab-2', tab: 2 },
-  { key: 'memo', targetId: 'tab-3', tab: 3 },
-  { key: 'config', targetId: 'tab-4', tab: 4 },
-  { key: 'streak', targetId: 'streak', tab: 0 },
-  { key: 'easter', targetId: 'clawd', tab: 0 },
-  { key: 'done', tab: 0 },
+  { key: 'intro' }, // 환영 — 할 게 없음 (버튼)
+  { key: 'project', targetId: 'add-project', tab: 0, watch: (s, b) => s.projects.length > b.projects },
+  { key: 'commit', targetId: 'commit-input', tab: 0, watch: (s, b) => s.todos.length > b.todos },
+  { key: 'commit2', targetId: 'commit-input', tab: 0, watch: (s, b) => s.todos.length > b.todos },
+  { key: 'reorder', targetId: 'todo-list', tab: 0, watch: (s, b) => s.todos.length === b.todos && orderSig(s) !== b.order },
+  { key: 'check', targetId: 'todo-list', tab: 0, watch: (s, b) => s.todos.filter((t) => t.done).length > b.done },
+  { key: 'move', targetId: 'project-chips', tab: 0, watch: (s, b) => assignSig(s) !== b.assign },
+  { key: 'ship', targetId: 'ship-bar', tab: 0, signal: 'ship' },
+  { key: 'backlog', targetId: 'tab-1', awaitTab: 1 },
+  { key: 'changelog', targetId: 'tab-2', awaitTab: 2 },
+  { key: 'memo', targetId: 'tab-3', awaitTab: 3 },
+  { key: 'config', targetId: 'tab-4', awaitTab: 4 },
+  { key: 'streak', targetId: 'streak' }, // 연속 배포 수 — 할 게 없음 (버튼)
+  { key: 'easter', targetId: 'clawd', signal: 'clawd' },
+  { key: 'done' }, // 마무리 — 할 게 없음 (버튼)
 ];
+
+// 자동 진행 트리거가 없는(=수동 [다음] 버튼) 단계 판정
+export const isManual = (st: TutStep) =>
+  !st.watch && st.awaitTab === undefined && !st.signal;
 
 interface TutStore {
   step: number | null; // null = 비활성
-  baseCount: number; // auto 단계 진입 시점의 카운트
+  base: Base; // 현재 단계 진입 시점 스냅샷
   start: () => void;
   next: () => void;
-  skipStep: () => void; // 이 단계만 건너뛰기 (= next와 동일하되 의미 구분)
+  skipStep: () => void; // 이 단계만 건너뛰기
   stop: () => void; // 완전 종료
-  checkAuto: () => void; // 상태 변화 시 자동 진행 판정
+  check: () => void; // 상태/탭 변화 시 watch·awaitTab 판정
+  signal: (name: string) => void; // 클릭 시그널 (ship·clawd)
 }
 
 export const useTutorial = create<TutStore>((set, get) => {
   const enter = (i: number) => {
     const st = TUT_STEPS[i];
     if (st.tab !== undefined) useApp.getState().setTab(st.tab);
-    set({ step: i, baseCount: st.count ? st.count() : 0 });
+    set({ step: i, base: snapshot(useApp.getState().s) });
+  };
+  // 액션 감지 후 살짝 늦춰 진행(피드백 여유). 그 사이 단계가 바뀌면 무시.
+  const advance = (from: number) => {
+    setTimeout(() => { if (get().step === from) get().next(); }, 600);
   };
   return {
     step: null,
-    baseCount: 0,
+    base: emptyBase,
     start: () => enter(0),
     next: () => {
       const s = get().step;
@@ -59,14 +94,18 @@ export const useTutorial = create<TutStore>((set, get) => {
     },
     skipStep: () => get().next(),
     stop: () => { set({ step: null }); useApp.getState().setTab(0); },
-    checkAuto: () => {
+    check: () => {
       const i = get().step;
       if (i === null) return;
       const st = TUT_STEPS[i];
-      if (!st.auto || !st.count) return;
-      if (st.auto(get().baseCount, st.count())) {
-        setTimeout(() => { if (get().step === i) get().next(); }, 650);
-      }
+      const app = useApp.getState();
+      if (st.watch && st.watch(app.s, get().base)) advance(i);
+      else if (st.awaitTab !== undefined && app.tab === st.awaitTab) advance(i);
+    },
+    signal: (name) => {
+      const i = get().step;
+      if (i === null) return;
+      if (TUT_STEPS[i]?.signal === name) advance(i);
     },
   };
 });

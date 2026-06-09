@@ -5,7 +5,8 @@ import { currentMonitor } from '@tauri-apps/api/window';
 import { emit, listen } from '@tauri-apps/api/event';
 import { LogicalPosition, LogicalSize } from '@tauri-apps/api/dpi';
 import { load } from '@tauri-apps/plugin-store';
-import { kMemoColors, type Memo } from './types';
+import { kMemoColors, type Memo, type Lang } from './types';
+import { UI } from './i18n';
 
 const win = getCurrentWebviewWindow();
 
@@ -16,6 +17,7 @@ export function MemoWindow({ id }: { id: string }) {
   const [color, setColor] = useState(0);
   const [pinned, setPinned] = useState(false);
   const [dark, setDark] = useState(true);
+  const [lang, setLang] = useState<Lang>('ko');
   const [projects, setProjects] = useState<ProjOpt[]>([]);
   const [picking, setPicking] = useState(false);
   const debounce = useRef<number | undefined>(undefined);
@@ -32,11 +34,10 @@ export function MemoWindow({ id }: { id: string }) {
         setPinned(m.pinned);
       }
       setProjects(
-        (state?.projects ?? [])
-          .filter((p: any) => !p.done)
-          .map((p: any) => ({ id: p.id, name: p.name, color: p.color })),
+        (state?.projects ?? []).map((p: any) => ({ id: p.id, name: p.name, color: p.color })),
       );
       setDark(state?.dark ?? true);
+      setLang(state?.lang === 'en' ? 'en' : 'ko');
     })();
 
     // 메인이 보내는 명령
@@ -95,6 +96,7 @@ export function MemoWindow({ id }: { id: string }) {
   if (!memo) return <div style={{ background: '#1a1a1a', height: '100vh' }} />;
 
   const [bg, ink] = kMemoColors[Math.min(color, kMemoColors.length - 1)];
+  const L = UI[lang];
   void dark; // 메모는 자체 색 팔레트라 테마와 독립 (현재는 표시용)
 
   return (
@@ -105,10 +107,10 @@ export function MemoWindow({ id }: { id: string }) {
           <span style={{ color: '#d97757', fontWeight: 700, fontSize: 12, pointerEvents: 'none' }}>✻</span>
           <span style={{ fontSize: 12, opacity: 0.7, pointerEvents: 'none' }}>memo</span>
         </div>
-        <Btn label="◑" tip="색 변경" onClick={cycleColor} ink={ink} />
-        <Btn label="→commit" tip="커밋으로 (프로젝트 선택)" onClick={startToCommit} ink={picking ? '#d97757' : ink} />
-        <Btn label={`[pin${pinned ? ' ●' : ''}]`} tip="항상 위" onClick={togglePin} ink={pinned ? '#d97757' : ink} />
-        <Btn label="✕" tip="닫기" onClick={close} ink={ink} />
+        <Btn label="◑" tip={L.mwColor} onClick={cycleColor} ink={ink} />
+        <Btn label="→commit" tip={L.mwToCommit} onClick={startToCommit} ink={picking ? '#d97757' : ink} />
+        <Btn label={`[pin${pinned ? ' ●' : ''}]`} tip={L.mwPin} onClick={togglePin} ink={pinned ? '#d97757' : ink} />
+        <Btn label="✕" tip={L.mwClose} onClick={close} ink={ink} />
       </div>
       <div style={{ height: 1, background: 'rgba(128,128,128,.25)', flex: 'none' }} />
 
@@ -123,8 +125,8 @@ export function MemoWindow({ id }: { id: string }) {
               boxShadow: '0 6px 18px rgba(0,0,0,.5)', padding: 4, fontSize: 12,
             }}
           >
-            <div style={{ padding: '5px 8px', opacity: 0.55, fontSize: 10 }}>어디로 보낼까?</div>
-            <MenuItem label="미분류" color="#5c5c5c" onClick={() => sendToCommit(null)} />
+            <div style={{ padding: '5px 8px', opacity: 0.55, fontSize: 10 }}>{L.mwSendWhere}</div>
+            <MenuItem label={L.unfiled} color="#5c5c5c" onClick={() => sendToCommit(null)} />
             {projects.map((pp) => (
               <MenuItem key={pp.id} label={pp.name} color={pp.color} onClick={() => sendToCommit(pp.id)} />
             ))}
@@ -135,7 +137,7 @@ export function MemoWindow({ id }: { id: string }) {
       <textarea
         value={memo.text}
         onChange={(e) => onText(e.target.value)}
-        placeholder="> 메모..."
+        placeholder={L.mwNotePh}
         autoFocus
         style={{
           flex: 1, resize: 'none', border: 'none', outline: 'none',

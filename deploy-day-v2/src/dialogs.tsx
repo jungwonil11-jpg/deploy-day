@@ -2,6 +2,7 @@
 // (Tauri 네이티브 다이얼로그는 못생기고 테스트 불가 → CLI 톤 인앱 모달)
 import { create } from 'zustand';
 import { useState, useEffect } from 'react';
+import { useUI } from './i18n';
 
 type DialogKind = 'prompt' | 'confirm' | 'alert';
 
@@ -36,7 +37,7 @@ export const uiPrompt = (title: string, initial = '', message?: string): Promise
     useDialogStore.getState().open({ kind: 'prompt', title, message, initial, resolve: resolve as any }),
   );
 
-export const uiConfirm = (title: string, okLabel = '확인'): Promise<boolean> =>
+export const uiConfirm = (title: string, okLabel?: string): Promise<boolean> =>
   new Promise((resolve) =>
     useDialogStore.getState().open({ kind: 'confirm', title, okLabel, resolve: resolve as any }),
   );
@@ -58,6 +59,7 @@ export function DialogHost() {
   const dialog = useDialogStore((s) => s.dialog);
   const toast = useDialogStore((s) => s.toast);
   const close = useDialogStore((s) => s.close);
+  const L = useUI();
   const [v, setV] = useState('');
 
   useEffect(() => {
@@ -94,7 +96,7 @@ export function DialogHost() {
             )}
             <div className="modal-actions">
               {dialog.kind !== 'alert' && (
-                <span className="iconbtn mono" onClick={() => finish(dialog.kind === 'confirm' ? false : null)}>취소</span>
+                <span className="iconbtn mono" onClick={() => finish(dialog.kind === 'confirm' ? false : null)}>{L.cancel}</span>
               )}
               <span
                 className="mono c-accent"
@@ -105,7 +107,7 @@ export function DialogHost() {
                   else finish(null);
                 }}
               >
-                {dialog.okLabel ?? '확인'}
+                {dialog.okLabel ?? L.ok}
               </span>
             </div>
           </div>

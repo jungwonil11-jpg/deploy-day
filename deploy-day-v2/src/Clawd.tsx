@@ -3,6 +3,8 @@
 // 가끔 진짜 Clawd로 맞춰짐 (확률 ~12%). 맞추면 축하 토스트.
 import { useState } from 'react';
 import { uiToast } from './dialogs';
+import { useTutorial } from './tutorial';
+import { useUI } from './i18n';
 
 // 진짜 Clawd (Claude Code 시작 배너의 그 픽셀 생물)
 const REAL = [' ▐▛███▜▌', '▝▜█████▛▘', '  ▘▘ ▝▝'];
@@ -19,11 +21,13 @@ const REAL_STR = REAL.join('\n');
 const HIT_RATE = 0.12; // 클릭당 진짜가 나올 확률
 
 export function ClawdLogo({ foundMsg }: { foundMsg: string }) {
+  const L = useUI();
   // 첫 표시는 글리치 (매 실행 다름)
   const [art, setArt] = useState<string>(() => glitch());
   const [found, setFound] = useState(false);
 
   const poke = () => {
+    useTutorial.getState().signal('clawd'); // 튜토리얼 easter 단계면 진행
     const real = Math.random() < HIT_RATE;
     if (real) {
       setArt(REAL_STR);
@@ -40,7 +44,7 @@ export function ClawdLogo({ foundMsg }: { foundMsg: string }) {
   return (
     <pre
       onClick={poke}
-      title="눌러보셈 ㅋㅋ"
+      title={L.pokeTip}
       style={{
         margin: '14px 0',
         lineHeight: 1.05,

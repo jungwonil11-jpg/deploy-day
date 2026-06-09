@@ -7,6 +7,7 @@ import {
   type AppState,
   type Release,
   type Memo,
+  type Lang,
   seedState,
   normalizeState,
   uid,
@@ -35,6 +36,7 @@ interface AppStore {
   setName: (name: string) => void;
   setShipDay: (day: number) => void;
   setPersona: (id: string) => void;
+  setLang: (lang: Lang) => void;
   setDark: (dark: boolean) => void;
   setActiveProject: (v: string) => void;
   setTab: (v: number) => void;
@@ -58,10 +60,9 @@ interface AppStore {
   renameProject: (id: string, name: string) => void;
   deleteProject: (id: string) => void; // 프로젝트 + 그 프로젝트의 커밋/백로그 함께 삭제
   reorderProjects: (ids: string[]) => void;
-  reviveProject: (id: string) => void;
 
   // 배포
-  ship: (title: string, graduated: string[]) => Release;
+  ship: (title: string) => Release;
 
   // 메모 (floating 창)
   newMemo: () => Promise<void>;
@@ -99,7 +100,13 @@ export const useApp = create<AppStore>((set, get) => {
     hydrate: async () => {
       tauriStore = await load(STORE_FILE);
       const raw = await tauriStore.get(STATE_KEY);
-      set({ s: raw ? normalizeState(raw) : seedState(), ready: true });
+      if (raw) {
+        set({ s: normalizeState(raw), ready: true });
+      } else {
+        // 첫 실행 — OS 언어로 기본값 자동 선택 (한국어면 ko, 그 외 en)
+        const detected: Lang = navigator.language?.toLowerCase().startsWith('ko') ? 'ko' : 'en';
+        set({ s: { ...seedState(), lang: detected }, ready: true });
+      }
     },
 
     setName: (name) => {
@@ -112,6 +119,7 @@ export const useApp = create<AppStore>((set, get) => {
       commit({ ...get().s, shipDay: day });
     },
     setPersona: (id) => commit({ ...get().s, persona: id }),
+    setLang: (lang) => commit({ ...get().s, lang }),
     setDark: (dark) => commit({ ...get().s, dark }),
     setActiveProject: (v) => set({ activeProject: v }),
     setTab: (v) => set({ tab: v }),
@@ -192,7 +200,7 @@ export const useApp = create<AppStore>((set, get) => {
       const s = get().s;
       const color = kPalette[s.projects.length % kPalette.length];
       const id = uid();
-      commit({ ...s, projects: [...s.projects, { id, name: v, color, done: false }] });
+      commit({ ...s, projects: [...s.projects, { id, name: v, color }] });
       set({ activeProject: id });
     },
     renameProject: (id, name) => {
@@ -213,17 +221,11 @@ export const useApp = create<AppStore>((set, get) => {
     },
     reorderProjects: (ids) => {
       const s = get().s;
-      const queue = [...ids];
       const byId = new Map(s.projects.map((p) => [p.id, p]));
-      const next = s.projects.map((p) => (!p.done ? byId.get(queue.shift()!)! : p));
-      commit({ ...s, projects: next });
-    },
-    reviveProject: (id) => {
-      const s = get().s;
-      commit({ ...s, projects: s.projects.map((p) => (p.id === id ? { ...p, done: false } : p)) });
+      commit({ ...s, projects: ids.map((id) => byId.get(id)!).filter(Boolean) });
     },
 
-    ship: (title, graduated) => {
+    ship: (title) => {
       const s = get().s;
       const shippedCount = s.todos.filter((t) => t.done).length;
       let major = s.major;
@@ -237,7 +239,7 @@ export const useApp = create<AppStore>((set, get) => {
         minor,
         title: title.trim(),
         date: todayStr(),
-        graduated: [...graduated],
+        // 이번 주 커밋 전체를 릴리즈로 스냅샷 (완료=shipped, 미완료=missed)
         notes: s.todos.map((t) => ({ text: t.text, done: t.done, project: t.project })),
       };
       commit({
@@ -245,13 +247,12 @@ export const useApp = create<AppStore>((set, get) => {
         major,
         minor,
         streak: shippedCount > 0 ? s.streak + 1 : 0,
-        projects: s.projects.map((p) => (graduated.includes(p.id) ? { ...p, done: true } : p)),
+        // 완료분은 비우고, 미완료분만 rollback 태그로 다음 주에 이월
         todos: s.todos
-          .filter((t) => !t.done && !(t.project && graduated.includes(t.project)))
+          .filter((t) => !t.done)
           .map((t) => ({ id: uid(), text: t.text, done: false, carried: true, project: t.project })),
         releases: [...s.releases, release],
       });
-      if (graduated.includes(get().activeProject)) set({ activeProject: 'all' });
       return release;
     },
 
@@ -308,7 +309,7 @@ export const useApp = create<AppStore>((set, get) => {
     },
     reset: () => {
       set({ activeProject: 'all' });
-      commit(seedState());
+      commit({ ...seedState(), lang: get().s.lang }); // 언어 설정은 유지
     },
   };
 });
