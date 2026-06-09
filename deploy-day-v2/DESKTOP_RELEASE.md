@@ -3,12 +3,14 @@
 > Tauri는 MSIX를 기본 생성 안 함 → Microsoft 공식 **winapp CLI** 로 패키징.
 > MSIX는 **업로드하면 스토어가 서명** → 코드서명 인증서 불필요(무료).
 
-## 상태 (2026-06-09)
+## 상태 (2026-06-10)
 
 - ✅ Partner Center 앱 생성: **deploy-day** (MSIX/PWA 타입)
 - ✅ MSIX 빌드·검증 완료 → `dist-msix\deploy-day_0.3.9.0_x64.msix` (unsigned, 제출용)
 - ✅ 정책 URL 라이브: `https://jungwonil11-jpg.github.io/deploy-day/privacy.html` · `/terms.html`
-- ⬜ 스크린샷(1920×1080) · 등록정보 입력 · 제출
+- ✅ 스크린샷(1920×1080) · 등록정보 입력 · **제출 완료**
+- ⏳ **심사(인증) 중** — 통과하면 스토어에 게시(출시). 보통 1~3일.
+- ⬜ 게시 후: README·GitHub 릴리즈 다운로드 링크를 스토어 페이지로 교체
 
 ## 식별자 (Partner Center → Product identity, manifest와 일치)
 
@@ -95,7 +97,7 @@ All data stays on your device. No collection, no network, no ads, no tracking �
 The UI is an homage to the Claude Code CLI.
 ```
 
-### 스크린샷 (1920×1080 PNG, 앱 실행본으로 — 미준비)
+### 스크린샷 (1920×1080 PNG, 앱 실행본으로 — 제출 완료)
 추천 컷: /sprint(커밋 목록) · /changelog · 메모 포스트잇 · 튜토리얼 · /config(테마/언어)
 
 ---

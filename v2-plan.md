@@ -93,7 +93,7 @@
 
 ### Phase C — 마무리 & 출시
 - [ ] /config (페르소나·테마·정책), 튜토리얼, 첫 실행 온보딩
-- [ ] MS Store: Tauri MSIX 빌드 + 파트너센터 (bibleSsul 경험 재활용)
+- [~] MS Store: Tauri MSIX 빌드 + 파트너센터 (bibleSsul 경험 재활용) — **제출 완료, 심사 중 (2026-06-10)**, 통과 시 게시
 
 ### Phase D — 최종 목표: 동기화
 - [ ] Firebase 프로젝트 + Auth(구글) + Firestore

@@ -26,7 +26,7 @@
 > - [x] **배포요일 드롭다운 / 이름변경 UI 디테일** (2026-06-09 완료) — 배너의 "매주 ○요일"
 >       클릭 시 요일 드롭다운(월~일, 기본 목)으로 배포 요일 변경 추가. 이름변경(배너 클릭)은
 >       이미 됨. v1 패리티 회복.
-> - [ ] MS Store 출시 (MSIX + 파트너센터, bibleSsul 경험 재활용)
+> - [ ] MS Store 출시 — **제출 완료, 심사(인증) 중 (2026-06-10)**. 통과 시 게시. 상세: `deploy-day-v2/DESKTOP_RELEASE.md`
 > - [ ] Firebase 멀티기기 동기화 (최종 목표, 별도 챕터)
 > - [ ] (선택) Android 빌드 (Tauri 2)
 > 커밋: A·B·스냅·config·이스터/페르소나/에러/드래그·튜토리얼·트레이·아이콘·v2통합·릴리즈.
@@ -82,20 +82,22 @@
 
 ---
 
-## ▶ 지금 트랙 — MS Store 출시 (로컬 Windows) ⬜
+## ✅ MS Store 출시 — 제출 완료, 심사(인증) 중 (2026-06-10)
 
-> Firebase·동기화 없이 로컬 버전 그대로 출시. 이게 현재 1순위.
-> **출시 경험 있음**: bibleSsul(C:\dev\bible) 이미 MS Store 제출 → 승인 대기 중.
-> 파트너센터 계정·MSIX 설정·정책 URL·심사 흐름 전부 재활용 가능.
+> v2(Tauri) 로컬 버전을 동기화 없이 그대로 제출. **제출까지 끝났고 현재 심사 대기 중.**
+> 심사 통과하면 스토어에 게시됨(보통 1~3일). 상세·재현 절차: `deploy-day-v2/DESKTOP_RELEASE.md`.
+> Tauri는 MSIX 기본 생성 X → Microsoft winapp CLI로 패키징, 스토어가 무료 서명.
+> (MS Store 흐름은 bibleSsul 경험 재활용.)
 
-- [ ] Phase 1 남은 버그 2개 먼저 정리 (특히 메모 복원 크래시 = 출시 블로커)
-- [ ] MSIX 빌드 — bibleSsul `pubspec.yaml`의 msix 설정 참고해서 그대로 적용
-      (identity name·publisher·아이콘·capabilities). MS Store 경유라 서명은 스토어가 함
-- [ ] 파트너센터에 새 앱 등록 (계정은 이미 있음)
-- [ ] 스토어 등록정보: 스크린샷, 설명, 카테고리, 연령등급(IARC)
-- [ ] 개인정보처리방침 URL — "수집 0·네트워크 0"이라 심사 유리.
-      bibleSsul과 동일 호스팅 방식 재사용
-- [ ] 제출 → 심사
+- [x] MSIX 빌드 — `deploy-day-v2/build-msix.ps1` (릴리즈빌드→레이아웃→`winapp package`, unsigned)
+- [x] 파트너센터 앱 등록 — "deploy-day" (Store ID `9NFVKM751187`)
+- [x] 스토어 등록정보 — 스크린샷·설명·카테고리(생산성)·연령등급(IARC 전체이용가)
+- [x] 개인정보처리방침 URL — GitHub Pages 라이브 ("수집 0·네트워크 0"이라 심사 유리)
+- [x] 제출
+- [ ] **심사 통과 → 게시** (대기 중)
+- [ ] 게시 후: README·GitHub 릴리즈 다운로드 링크를 스토어 페이지로 교체
+
+> 그 전까지 배포 채널 = GitHub Releases의 setup.exe/msi (현재 v0.3.9).
 
 ---
 
