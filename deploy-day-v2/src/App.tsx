@@ -6,6 +6,7 @@ import { personaOf, pfmt } from './persona';
 import { isShipDay, daysToShip, verStr, dayName, dayTok, kDayEn } from './types';
 import { useUI, fmt } from './i18n';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import type { Memo } from './types';
 import { SprintTab } from './tabs/SprintTab';
 import { BacklogTab } from './tabs/BacklogTab';
@@ -29,6 +30,11 @@ export default function App() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', s.dark ? 'dark' : 'light');
   }, [s.dark]);
+
+  // 창 타이틀 = 앱 이름(언어별: 인생을 배포 / deploy-day)
+  useEffect(() => {
+    void getCurrentWindow().setTitle(L.appName).catch(() => {});
+  }, [L.appName]);
 
   // 첫 실행 이름 온보딩 → 튜토리얼 자동 시작 (인앱 다이얼로그)
   useEffect(() => {
@@ -147,7 +153,7 @@ export default function App() {
       {/* status line — 고정 오버레이가 아니라 실제 푸터(스크롤 영역 아래) */}
       <div className="statusline" data-tut="statusline">
         <div className="row1">
-          <span className="c-blue" style={{ fontWeight: 700 }}>deploy-day {verStr(s.major, s.minor)} {L.statusCycle}</span>
+          <span className="c-blue" style={{ fontWeight: 700 }}>{L.appName} {verStr(s.major, s.minor)} {L.statusCycle}</span>
           <span className="c-dimmer"> · {fmt(L.streakWeeks, { n: s.streak })} · </span>
           <span className="c-magenta" style={{ fontWeight: 700 }}>{L.statusMain}</span>
           <span className="spacer" />

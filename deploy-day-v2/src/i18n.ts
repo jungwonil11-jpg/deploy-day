@@ -8,6 +8,8 @@ export const fmt = (t: string, v: Record<string, string | number>): string =>
   Object.entries(v).reduce((s, [k, val]) => s.split(`{${k}}`).join(`${val}`), t);
 
 const ko = {
+  // 앱 이름 (브랜드) — ko: "인생을 배포", en: "deploy-day"
+  appName: '인생을 배포',
   // 배너 / 앱 셸
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: '인생 배포 · 매주 {day}',
@@ -15,7 +17,7 @@ const ko = {
   tipsHead: 'Tips for getting started',
   whatsNew: "What's new",
   noReleaseYet: '아직 릴리즈 없음 — 첫 배포가 첫 뉴스임',
-  welcomeTitle: '✻ Welcome to deploy-day!',
+  welcomeTitle: '✻ 인생을 배포에 오신 걸 환영해요!',
   statusCycle: '(1주 cycle)',
   statusMain: 'main',
   deployModeOn: '⏵⏵ deploy mode on',
@@ -99,6 +101,8 @@ const ko = {
 };
 
 const en: typeof ko = {
+  // app name (brand)
+  appName: 'deploy-day',
   // banner / app shell
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: 'Life deployment · every {day}',
