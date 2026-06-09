@@ -49,6 +49,7 @@ const ko = {
   // /changelog
   changelogTitle: 'changelog · 내 인생 릴리즈 히스토리',
   deletedProject: '삭제된 프로젝트',
+  emptyRelease: '이번 배포는 빈손 (완료 항목 없음)',
 
   // /memo
   memoTitle: 'memo · 바탕화면 포스트잇 (항상 위)',
@@ -146,6 +147,7 @@ const en: typeof ko = {
   // /changelog
   changelogTitle: 'changelog · my life release history',
   deletedProject: 'Deleted project',
+  emptyRelease: 'Shipped nothing this release',
 
   // /memo
   memoTitle: 'memo · desktop sticky notes (always on top)',

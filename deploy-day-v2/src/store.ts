@@ -227,12 +227,12 @@ export const useApp = create<AppStore>((set, get) => {
         minor,
         title: title.trim(),
         date: todayStr(),
-        // 노트가 참조하는 프로젝트의 이름·색 스냅샷 — 나중에 프로젝트를 지워도 박제 유지
+        // 완료(배포)한 항목이 참조하는 프로젝트만 이름·색 스냅샷 (삭제돼도 박제 유지)
         projects: s.projects
-          .filter((p) => s.todos.some((t) => t.project === p.id))
+          .filter((p) => s.todos.some((t) => t.project === p.id && t.done))
           .map((p) => ({ id: p.id, name: p.name, color: p.color })),
-        // 이번 주 커밋 전체를 릴리즈로 스냅샷 (완료=shipped, 미완료=missed)
-        notes: s.todos.map((t) => ({ text: t.text, done: t.done, project: t.project })),
+        // 릴리즈엔 완료한 것만 박제. 미완료는 다음 스프린트로 롤백되며 릴리즈엔 미포함.
+        notes: s.todos.filter((t) => t.done).map((t) => ({ text: t.text, done: true, project: t.project })),
       };
       commit({
         ...s,

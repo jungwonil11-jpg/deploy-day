@@ -1,4 +1,5 @@
-// /changelog — 릴리즈 히스토리. 배포 시점 프로젝트 스냅샷으로 박제(프로젝트 삭제와 무관하게 유지).
+// /changelog — 릴리즈 히스토리. "완료(배포)한 것"만 박제 (미완료는 다음 스프린트 롤백, 릴리즈엔 미포함).
+// 배포 시점 프로젝트 스냅샷으로 그룹핑해 프로젝트 삭제와 무관하게 유지.
 import { useState } from 'react';
 import { useApp } from '../store';
 import { personaOf, pfmt } from '../persona';
@@ -10,16 +11,16 @@ function ReleaseTile({ r, first, open0 }: { r: Release; first: boolean; open0: b
   const s = useApp((st) => st.s);
   const L = useUI();
   const [open, setOpen] = useState(open0);
-  const shipped = r.notes.filter((n) => n.done).length;
-  const missed = r.notes.length - shipped;
   const ver = verStr(r.major, r.minor);
+  // 완료한 항목만 (옛 릴리즈에 미완료가 섞여 저장됐어도 여기서 걸러 깔끔하게 표시)
+  const notes = r.notes.filter((n) => n.done);
 
-  // 그룹 순서: 배포 시점 스냅샷 프로젝트 먼저, 그다음 노트에만 있는 것(구버전 릴리즈) + 미분류(null)
+  // 그룹 순서: 배포 시점 스냅샷 프로젝트 먼저, 그다음 노트에만 있는 것 + 미분류(null)
   const pids: (string | null)[] = [];
-  for (const p of r.projects) if (r.notes.some((n) => n.project === p.id) && !pids.includes(p.id)) pids.push(p.id);
-  for (const n of r.notes) if (!pids.includes(n.project)) pids.push(n.project);
+  for (const p of r.projects) if (notes.some((n) => n.project === p.id) && !pids.includes(p.id)) pids.push(p.id);
+  for (const n of notes) if (!pids.includes(n.project)) pids.push(n.project);
 
-  // 표시 이름·색: 스냅샷 → (구버전이면) 현재 프로젝트 → 둘 다 없으면 "삭제된 프로젝트". null=미분류.
+  // 표시 이름·색: 스냅샷 → 현재 프로젝트 → 삭제된 프로젝트. null=미분류.
   const metaOf = (pid: string | null): { name: string; color: string } => {
     if (pid === null) return { name: projName(s, null), color: projColor(s, null) };
     const snap = r.projects.find((p) => p.id === pid);
@@ -36,38 +37,41 @@ function ReleaseTile({ r, first, open0 }: { r: Release; first: boolean; open0: b
         style={{ borderTop: 'none', alignItems: 'flex-start', cursor: 'pointer' }}
         onClick={() => setOpen(!open)}
       >
-        <span className="mono" style={{ color: missed === 0 ? 'var(--ship)' : 'var(--warn)' }}>⏺</span>
+        <span className="mono" style={{ color: notes.length ? 'var(--ship)' : 'var(--dimmer)' }}>⏺</span>
         <div className="grow">
           <span className="mono c-accent" style={{ fontSize: 16, fontWeight: 800 }}>{ver}</span>
           {r.title && <span className="kr" style={{ fontSize: 14, marginLeft: 9 }}>{r.title}</span>}
           <div className="mono c-dim" style={{ fontSize: 11, marginTop: 3 }}>{r.date}</div>
         </div>
         <span className="mono c-dimmer" style={{ fontSize: 11 }}>
-          <span className="c-ship" style={{ fontWeight: 700 }}>{shipped}</span> shipped
-          {missed > 0 && ` · ${missed} rolled`}
+          <span className="c-ship" style={{ fontWeight: 700 }}>{notes.length}</span> shipped
         </span>
       </div>
       {open && (
         <div style={{ padding: '0 16px 14px' }}>
-          {pids.map((pid) => {
-            const ns = r.notes.filter((n) => n.project === pid);
-            if (ns.length === 0) return null;
-            const meta = metaOf(pid);
-            return (
-              <div key={`${pid}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 0 4px' }}>
-                  <PDot color={meta.color} />
-                  <span className="mono" style={{ fontSize: 11, color: 'var(--dim)' }}>{meta.name}</span>
-                </div>
-                {ns.map((n, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 9, padding: '4px 0 4px 4px', alignItems: 'flex-start' }}>
-                    <span className="mono" style={{ color: n.done ? 'var(--ship)' : 'var(--rollback)' }}>{n.done ? '+' : '−'}</span>
-                    <span className="kr" style={{ fontSize: 14, color: n.done ? 'var(--txt)' : 'var(--dim)' }}>{n.text}</span>
+          {notes.length === 0 ? (
+            <div className="kr c-dimmer" style={{ fontSize: 13, padding: '8px 0 2px' }}>{L.emptyRelease}</div>
+          ) : (
+            pids.map((pid) => {
+              const ns = notes.filter((n) => n.project === pid);
+              if (ns.length === 0) return null;
+              const meta = metaOf(pid);
+              return (
+                <div key={`${pid}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '10px 0 4px' }}>
+                    <PDot color={meta.color} />
+                    <span className="mono" style={{ fontSize: 11, color: 'var(--dim)' }}>{meta.name}</span>
                   </div>
-                ))}
-              </div>
-            );
-          })}
+                  {ns.map((n, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 9, padding: '4px 0 4px 4px', alignItems: 'flex-start' }}>
+                      <span className="mono c-ship">+</span>
+                      <span className="kr" style={{ fontSize: 14, color: 'var(--txt)' }}>{n.text}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>
