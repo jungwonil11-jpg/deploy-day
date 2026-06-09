@@ -34,6 +34,8 @@ export interface Release {
   minor: number;
   title: string;
   date: string; // yyyy-MM-dd
+  // 배포 시점 프로젝트 스냅샷(id·이름·색) — 나중에 프로젝트를 지워도 changelog 박제가 유지됨
+  projects: { id: string; name: string; color: string }[];
   notes: ReleaseNote[];
 }
 
@@ -185,6 +187,11 @@ export function normalizeState(j: any): AppState {
       minor: r.minor ?? 0,
       title: r.title ?? '',
       date: r.date ?? '',
+      projects: (r.projects ?? []).map((p: any) => ({
+        id: p.id,
+        name: p.name ?? '',
+        color: migrateColor(p.color ?? kPalette[0]),
+      })),
       notes: (r.notes ?? []).map((n: any): ReleaseNote => ({
         text: n.text ?? '',
         done: n.done === true,

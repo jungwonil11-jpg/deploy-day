@@ -169,7 +169,13 @@ export function ConfigTab() {
         <span className="chip mono" onClick={doReset}>reset</span>
       </div>
       <div style={{ textAlign: 'center', marginTop: 14 }}>
-        <span className="mono c-dimmer" style={{ fontSize: 11 }}>{L.contact}</span>
+        <span
+          className="mono c-dimmer"
+          style={{ fontSize: 11, cursor: 'pointer', textDecoration: 'underline dotted' }}
+          onClick={() => { window.location.href = `mailto:jungwonil11@gmail.com?subject=${encodeURIComponent('[deploy-day] feedback')}`; }}
+        >
+          {L.contact}
+        </span>
       </div>
     </div>
   );

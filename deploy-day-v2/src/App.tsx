@@ -60,15 +60,17 @@ function ShipDayLine() {
               return (
                 <div
                   key={d}
-                  onClick={() => { setShipDay(d); setOpen(false); }}
+                  onClick={() => { setShipDay(d); setOpen(false); uiToast(fmt(L.shipDayChanged, { day: dayName(lang, d) })); }}
                   className="mono"
                   style={{
-                    padding: '6px 18px', cursor: 'pointer', textAlign: 'center', borderRadius: 4, whiteSpace: 'nowrap',
+                    padding: '6px 18px', cursor: 'pointer', textAlign: 'left', borderRadius: 4, whiteSpace: 'nowrap',
                     background: on ? 'var(--panel2)' : 'transparent',
                     color: on ? 'var(--accent)' : 'var(--txt)', fontWeight: on ? 700 : 400,
                   }}
                 >
-                  {on ? '◉ ' : ''}{dayName(lang, d)}
+                  <span style={{ color: 'var(--accent)' }}>{on ? '⏺ ' : '   '}</span>
+                  {dayName(lang, d)}
+                  {d === 4 && <span style={{ color: 'var(--accent)', marginLeft: 6, fontWeight: 400 }}>{L.recommendedBadge}</span>}
                 </div>
               );
             })}

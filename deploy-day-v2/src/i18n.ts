@@ -14,6 +14,8 @@ const ko = {
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: '인생 배포 · 매주 {day}',
   shipDayTip: '배포 요일 변경',
+  shipDayChanged: '배포일 변경됨 — 매주 {day}',
+  recommendedBadge: '(추천)',
   streakWeeks: 'streak {n}주',
   tipsHead: 'Tips for getting started',
   whatsNew: "What's new",
@@ -46,6 +48,7 @@ const ko = {
 
   // /changelog
   changelogTitle: 'changelog · 내 인생 릴리즈 히스토리',
+  deletedProject: '삭제된 프로젝트',
 
   // /memo
   memoTitle: 'memo · 바탕화면 포스트잇 (항상 위)',
@@ -108,6 +111,8 @@ const en: typeof ko = {
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: 'Life deployment · every {day}',
   shipDayTip: 'change ship day',
+  shipDayChanged: 'Ship day changed — every {day}',
+  recommendedBadge: '(recommended)',
   streakWeeks: 'streak {n}w',
   tipsHead: 'Tips for getting started',
   whatsNew: "What's new",
@@ -140,6 +145,7 @@ const en: typeof ko = {
 
   // /changelog
   changelogTitle: 'changelog · my life release history',
+  deletedProject: 'Deleted project',
 
   // /memo
   memoTitle: 'memo · desktop sticky notes (always on top)',

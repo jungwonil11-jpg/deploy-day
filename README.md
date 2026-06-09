@@ -52,18 +52,17 @@ Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바�
 | `ship` | 완료한 일을 릴리즈 노트로 박제 |
 | `rollback` | 못 끝낸 일은 다음 스프린트로 이월 |
 | `streak` | 연속 배포 주차 — 빈손 배포면 0으로 리셋 |
-| `SHIPPED` 🎓 | 끝까지 간 프로젝트 졸업 (명예의 전당행) |
 
 ## 기능 (v2)
 
 - **`/sprint`** — 이번 주 할 일. 프로젝트별 분류(드래그 이동), 배포일에 `⏵⏵ ship` 활성화
 - **`/backlog`** — 다음 버전 아이디어 메모, 스프린트로 pull
-- **`/changelog`** — 인생 릴리즈 히스토리 + 졸업 프로젝트 명예의 전당
+- **`/changelog`** — 인생 릴리즈 히스토리 (배포 시점 스냅샷으로 박제)
 - **`/memo`** — 바탕화면 포스트잇 (별도 창, 항상 위 고정, 7색, 가장자리·메모끼리 자석 스냅 + 슬라이드 애니, →commit 으로 스프린트 전송)
-- **`/config`** — 페르소나(Victor·Sunny·Sage 말투 전환)·다크/라이트·정책·백업
+- **`/config`** — 페르소나(Victor·Sunny·Sage 말투 전환)·언어(한/영 i18n)·다크/라이트·정책·백업
 - **데스크탑 상주** — 트레이(X→트레이 숨김)·자동 시작·항상 위 고정
-- 인터랙티브 튜토리얼(13단계 코치마크)·첫 실행 온보딩·이스터에그(Clawd)
-- 배포일 D-day · streak · JSON 백업/복원
+- 인터랙티브 튜토리얼(15단계 코치마크, 단계마다 직접 조작)·첫 실행 온보딩·이스터에그(Clawd)
+- 배포일 D-day(요일 변경 가능) · streak · **파일** 백업/복원
 
 ## 스택 (v2)
 
@@ -78,7 +77,7 @@ Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바�
 cd deploy-day-v2
 npm install
 npm run tauri dev      # 개발
-npm run tauri build    # 릴리즈 (Windows exe/MSIX)
+npm run tauri build    # 릴리즈 (Windows setup.exe + MSI)
 ```
 
 > 사전 요구: Node, Rust(rustup), Visual Studio C++ 빌드 도구, WebView2(Win11 기본 내장).

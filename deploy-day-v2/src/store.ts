@@ -239,6 +239,10 @@ export const useApp = create<AppStore>((set, get) => {
         minor,
         title: title.trim(),
         date: todayStr(),
+        // 노트가 참조하는 프로젝트의 이름·색 스냅샷 — 나중에 프로젝트를 지워도 박제 유지
+        projects: s.projects
+          .filter((p) => s.todos.some((t) => t.project === p.id))
+          .map((p) => ({ id: p.id, name: p.name, color: p.color })),
         // 이번 주 커밋 전체를 릴리즈로 스냅샷 (완료=shipped, 미완료=missed)
         notes: s.todos.map((t) => ({ text: t.text, done: t.done, project: t.project })),
       };
