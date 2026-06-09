@@ -1,5 +1,5 @@
 // 앱 셸 — 시작 배너 + 어나운스 라인 + 탭 + status line. (v1 home_screen.dart 포팅)
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useApp } from './store';
 import { personaOf, pfmt } from './persona';
 // personaOf 사용 (App 내 여러 곳)
@@ -18,33 +18,41 @@ import { ClawdLogo } from './Clawd';
 import { TutorialOverlay } from './TutorialOverlay';
 import { useTutorial } from './tutorial';
 
-// 배너 자막 "인생 배포 · 매주 ○요일" — 요일 클릭 시 드롭다운으로 배포 요일 변경 (v1 패리티)
+// 배너 자막 "인생 배포 · 매주 ○요일" — 요일 클릭 시 드롭다운으로 배포 요일 변경 (v1 패리티).
+// 드롭다운은 position:fixed — 배너 박스의 overflow:hidden 에 잘리지 않도록 viewport 기준 배치.
 function ShipDayLine() {
   const lang = useApp((st) => st.s.lang);
   const shipDay = useApp((st) => st.s.shipDay);
   const setShipDay = useApp((st) => st.setShipDay);
   const L = useUI();
   const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<DOMRect | null>(null);
+  const ref = useRef<HTMLSpanElement>(null);
   const [pre, post] = L.lifeDeploy.split('{day}');
+  const toggle = () => {
+    if (!open && ref.current) setRect(ref.current.getBoundingClientRect());
+    setOpen((o) => !o);
+  };
   return (
-    <div className="mono c-dim" style={{ fontSize: 12, position: 'relative' }}>
+    <div className="mono c-dim" style={{ fontSize: 12 }}>
       {pre}
       <span
-        onClick={() => setOpen((o) => !o)}
+        ref={ref}
+        onClick={toggle}
         title={L.shipDayTip}
         style={{ color: 'var(--accent)', cursor: 'pointer', borderBottom: '1px dotted var(--accent)' }}
       >
         {dayName(lang, shipDay)} ▾
       </span>
       {post}
-      {open && (
+      {open && rect && (
         <>
-          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 150 }} />
           <div
             style={{
-              position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
-              marginTop: 6, zIndex: 51, background: 'var(--panel)', border: '1px solid var(--border)',
-              borderRadius: 6, padding: 4, boxShadow: '0 8px 24px rgba(0,0,0,.45)',
+              position: 'fixed', top: rect.bottom + 6, left: rect.left + rect.width / 2, transform: 'translateX(-50%)',
+              zIndex: 151, background: 'var(--panel)', border: '1px solid var(--border)',
+              borderRadius: 6, padding: 4, boxShadow: '0 8px 24px rgba(0,0,0,.5)',
             }}
           >
             {[1, 2, 3, 4, 5, 6, 7].map((d) => {
