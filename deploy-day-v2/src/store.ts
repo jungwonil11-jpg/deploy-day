@@ -8,6 +8,7 @@ import {
   type Release,
   type Memo,
   type Lang,
+  type Todo,
   seedState,
   normalizeState,
   uid,
@@ -47,8 +48,7 @@ interface AppStore {
   toggleTodo: (id: string) => void;
   editTodo: (id: string, text: string) => void;
   deleteTodo: (id: string) => void;
-  reorderTodoSection: (project: string | null, done: boolean, ids: string[]) => void;
-  moveTodoToProject: (id: string, project: string | null) => void; // 커밋을 다른 프로젝트로
+  setTodos: (todos: Todo[]) => void; // 드래그 결과(순서·프로젝트 재배정) 일괄 반영
 
   // 백로그
   addBacklog: (text: string) => void;
@@ -159,19 +159,7 @@ export const useApp = create<AppStore>((set, get) => {
       const s = get().s;
       commit({ ...s, todos: s.todos.filter((t) => t.id !== id) });
     },
-    moveTodoToProject: (id, project) => {
-      const s = get().s;
-      commit({ ...s, todos: s.todos.map((t) => (t.id === id ? { ...t, project } : t)) });
-    },
-    reorderTodoSection: (project, done, ids) => {
-      const s = get().s;
-      const queue = [...ids];
-      const byId = new Map(s.todos.map((t) => [t.id, t]));
-      const next = s.todos.map((t) =>
-        t.project === project && t.done === done ? byId.get(queue.shift()!)! : t,
-      );
-      commit({ ...s, todos: next });
-    },
+    setTodos: (todos) => commit({ ...get().s, todos }),
 
     addBacklog: (text) => {
       const v = text.trim();

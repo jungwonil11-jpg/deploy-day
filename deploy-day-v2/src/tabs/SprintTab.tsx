@@ -25,7 +25,8 @@ const NULL_PID = '∅'; // 미분류(null) 프로젝트를 data 속성에 표기
 const DRAG_THRESHOLD = 5; // 이 픽셀 넘게 움직여야 드래그로 인정(아니면 클릭)
 
 type DragState =
-  | { kind: 'todo'; pid: string | null; done: boolean; order: string[]; activeId: string }
+  // todo 드래그는 전체 작업목록의 라이브 복사본(live)을 들고 다님 — 그룹 넘나드는 자유 이동 지원.
+  | { kind: 'todo'; activeId: string; live: Todo[] }
   | { kind: 'project'; order: string[]; activeId: string };
 
 type Down = {
@@ -41,11 +42,10 @@ export function SprintTab() {
   const toggleTodo = useApp((st) => st.toggleTodo);
   const editTodo = useApp((st) => st.editTodo);
   const deleteTodo = useApp((st) => st.deleteTodo);
-  const moveTodoToProject = useApp((st) => st.moveTodoToProject);
+  const setTodos = useApp((st) => st.setTodos);
   const addProject = useApp((st) => st.addProject);
   const renameProject = useApp((st) => st.renameProject);
   const deleteProject = useApp((st) => st.deleteProject);
-  const reorderTodoSection = useApp((st) => st.reorderTodoSection);
   const reorderProjects = useApp((st) => st.reorderProjects);
   const ship = useApp((st) => st.ship);
   const p = personaOf(s);
@@ -137,7 +137,7 @@ export function SprintTab() {
       // 잡은 행의 크기·잡은 지점 기록 → 고스트가 같은 크기로 그 지점 기준 따라옴
       const r = d.el.getBoundingClientRect();
       ghostGeo.current = { w: r.width, offX: d.x - r.left, offY: d.y - r.top };
-      setDrag({ kind: 'todo', pid: d.pid ?? null, done: !!d.done, order: d.ids, activeId: d.id });
+      setDrag({ kind: 'todo', activeId: d.id, live: [...s.todos] });
     } else setDrag({ kind: 'project', order: d.ids, activeId: d.id });
   };
   const onUp = (e: React.PointerEvent) => {
@@ -146,25 +146,39 @@ export function SprintTab() {
     downRef.current = null;
   };
 
+  // 아무 행 위에나 끌면 그 행 옆에 삽입 + 그 행의 프로젝트로 재배정 (그룹 넘나듦 자유).
   const todoMove = (e: React.PointerEvent) => {
     if (drag?.kind !== 'todo') return;
     const el = hit(e.clientX, e.clientY, '[data-rowid]');
     if (!el) return;
     const overId = el.getAttribute('data-rowid')!;
-    if (overId === drag.activeId || !drag.order.includes(overId)) return; // 같은 섹션만
-    const o = [...drag.order];
-    o.splice(o.indexOf(overId), 0, o.splice(o.indexOf(drag.activeId), 1)[0]);
-    setDrag({ ...drag, order: o });
+    if (overId === drag.activeId) return;
+    const cur = drag.live;
+    const active = cur.find((t) => t.id === drag.activeId);
+    const over = cur.find((t) => t.id === overId);
+    if (!active || !over) return;
+    const r = el.getBoundingClientRect();
+    const after = e.clientY > r.top + r.height / 2; // 행 중앙 아래면 뒤에, 위면 앞에
+    const moved = active.project === over.project ? active : { ...active, project: over.project };
+    const without = cur.filter((t) => t.id !== drag.activeId);
+    let i = without.findIndex((t) => t.id === overId);
+    if (after) i += 1;
+    without.splice(i, 0, moved);
+    const same = without.length === cur.length && without.every((t, j) => t.id === cur[j].id && t.project === cur[j].project);
+    if (same) return; // 변화 없으면 리렌더 생략
+    setDrag({ ...drag, live: without });
   };
   const todoUp = (e: React.PointerEvent) => {
     if (drag?.kind === 'todo') {
+      let final = drag.live;
+      // 칩 위에 떨궜으면 그 프로젝트로(전체 칩=미분류) 강제 재배정
       const chip = hit(e.clientX, e.clientY, '[data-projchip]');
       if (chip) {
-        const pid = chip.getAttribute('data-projid');
-        moveTodoToProject(drag.activeId, pid && pid !== NULL_PID ? pid : null); // 칩 위면 이동
-      } else {
-        reorderTodoSection(drag.pid, drag.done, drag.order); // 섹션 내 순서 확정
+        const raw = chip.getAttribute('data-projid');
+        const pid = raw && raw !== NULL_PID ? raw : null;
+        final = drag.live.map((t) => (t.id === drag.activeId ? { ...t, project: pid } : t));
       }
+      setTodos(final);
     }
     setDrag(null);
   };
@@ -228,26 +242,26 @@ export function SprintTab() {
     );
   };
 
-  // 한 섹션(같은 프로젝트 + 같은 완료상태) — 라이브 순서로 렌더
-  const renderSection = (pid: string | null, done: boolean, items: Todo[]): React.ReactNode[] => {
+  // 한 섹션(같은 프로젝트 + 같은 완료상태) — 들어온 순서대로 렌더 (라이브 목록이 이미 정렬됨)
+  const renderSection = (items: Todo[]): React.ReactNode[] => {
     if (items.length === 0) return [];
     const baseIds = items.map((t) => t.id);
-    const byId = new Map(items.map((t) => [t.id, t]));
-    const live = drag?.kind === 'todo' && drag.pid === pid && drag.done === done ? drag.order : baseIds;
-    return live.map((id) => byId.get(id)).filter((t): t is Todo => !!t).map((t) => todoRow(t, baseIds));
+    return items.map((t) => todoRow(t, baseIds));
   };
 
-  const renderProjectTodos = (pid: string | null, its: Todo[]): React.ReactNode[] => [
-    ...renderSection(pid, false, its.filter((t) => !t.done)),
-    ...renderSection(pid, true, its.filter((t) => t.done)),
+  const renderProjectTodos = (its: Todo[]): React.ReactNode[] => [
+    ...renderSection(its.filter((t) => !t.done)),
+    ...renderSection(its.filter((t) => t.done)),
   ];
 
+  // 드래그 중엔 라이브 작업목록으로 렌더 → 그룹 넘나드는 이동이 즉시 반영됨
+  const todos = drag?.kind === 'todo' ? drag.live : s.todos;
   const rows: React.ReactNode[] = [];
-  if (s.todos.length === 0) {
+  if (todos.length === 0) {
     rows.push(<Empty key="e" text={p.emptySprint} />);
   } else if (active === 'all') {
     for (const pid of projOrder(s)) {
-      const its = s.todos.filter((t) => t.project === pid);
+      const its = todos.filter((t) => t.project === pid);
       if (its.length === 0) continue;
       const done = its.filter((t) => t.done).length;
       rows.push(
@@ -257,12 +271,12 @@ export function SprintTab() {
           <span className="mono c-dimmer" style={{ fontSize: 11 }}> · {done}/{its.length}</span>
         </div>,
       );
-      rows.push(...renderProjectTodos(pid, its));
+      rows.push(...renderProjectTodos(its));
     }
   } else {
-    const its = s.todos.filter((t) => t.project === active);
+    const its = todos.filter((t) => t.project === active);
     if (its.length === 0) rows.push(<Empty key="e" text={p.ui.emptyProj} />);
-    else rows.push(...renderProjectTodos(active, its));
+    else rows.push(...renderProjectTodos(its));
   }
 
   const ready = isShipDay(s.shipDay);
