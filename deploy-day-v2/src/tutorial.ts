@@ -37,6 +37,7 @@ export interface TutStep {
   watch?: (s: AppState, base: Base) => boolean; // 상태 변화로 자동완료
   awaitTab?: number; // 사용자가 이 탭으로 직접 이동하면 완료
   signal?: string; // 이 시그널(특정 클릭)이 오면 완료
+  place?: 'above' | 'below'; // 풍선 위치 강제 — 드래그 대상이 풍선에 가릴 때 사용
 }
 
 export const TUT_STEPS: TutStep[] = [
@@ -46,7 +47,8 @@ export const TUT_STEPS: TutStep[] = [
   { key: 'commit2', targetId: 'commit-input', tab: 0, watch: (s, b) => s.todos.length > b.todos },
   { key: 'reorder', targetId: 'todo-list', tab: 0, watch: (s, b) => s.todos.length === b.todos && orderSig(s) !== b.order },
   { key: 'check', targetId: 'todo-list', tab: 0, watch: (s, b) => s.todos.filter((t) => t.done).length > b.done },
-  { key: 'move', targetId: 'project-chips', tab: 0, watch: (s, b) => assignSig(s) !== b.assign },
+  // place:'above' — 끌 커밋이 칩 아래에 있어 풍선이 칩 아래로 오면 가림 → 풍선을 칩 위로
+  { key: 'move', targetId: 'project-chips', tab: 0, watch: (s, b) => assignSig(s) !== b.assign, place: 'above' },
   { key: 'ship', targetId: 'ship-bar', tab: 0, signal: 'ship' },
   { key: 'backlog', targetId: 'tab-1', awaitTab: 1 },
   { key: 'changelog', targetId: 'tab-2', awaitTab: 2 },

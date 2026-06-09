@@ -56,7 +56,8 @@ export function TutorialOverlay() {
     : null;
 
   // 풍선: 타겟 아래(타겟이 화면 위쪽) 또는 위. 타겟 없으면 화면 중앙.
-  const below = !hole || hole.top < window.innerHeight / 2;
+  // cur.place 가 있으면 강제 (드래그 대상이 가려지는 단계용).
+  const below = cur.place === 'above' ? false : cur.place === 'below' ? true : (!hole || hole.top < window.innerHeight / 2);
   const posStyle: React.CSSProperties = hole
     ? { position: 'fixed', left: '50%', transform: 'translateX(-50%)', ...(below ? { top: hole.top + hole.height + 14 } : { bottom: window.innerHeight - hole.top + 14 }) }
     : { position: 'fixed', left: '50%', top: '50%', transform: 'translate(-50%,-50%)' };

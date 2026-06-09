@@ -1,5 +1,5 @@
 // 앱 셸 — 시작 배너 + 어나운스 라인 + 탭 + status line. (v1 home_screen.dart 포팅)
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useApp } from './store';
 import { personaOf, pfmt } from './persona';
 // personaOf 사용 (App 내 여러 곳)
@@ -17,6 +17,59 @@ import { DialogHost, uiPrompt, uiToast } from './dialogs';
 import { ClawdLogo } from './Clawd';
 import { TutorialOverlay } from './TutorialOverlay';
 import { useTutorial } from './tutorial';
+
+// 배너 자막 "인생 배포 · 매주 ○요일" — 요일 클릭 시 드롭다운으로 배포 요일 변경 (v1 패리티)
+function ShipDayLine() {
+  const lang = useApp((st) => st.s.lang);
+  const shipDay = useApp((st) => st.s.shipDay);
+  const setShipDay = useApp((st) => st.setShipDay);
+  const L = useUI();
+  const [open, setOpen] = useState(false);
+  const [pre, post] = L.lifeDeploy.split('{day}');
+  return (
+    <div className="mono c-dim" style={{ fontSize: 12, position: 'relative' }}>
+      {pre}
+      <span
+        onClick={() => setOpen((o) => !o)}
+        title={L.shipDayTip}
+        style={{ color: 'var(--accent)', cursor: 'pointer', borderBottom: '1px dotted var(--accent)' }}
+      >
+        {dayName(lang, shipDay)} ▾
+      </span>
+      {post}
+      {open && (
+        <>
+          <div onClick={() => setOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 50 }} />
+          <div
+            style={{
+              position: 'absolute', top: '100%', left: '50%', transform: 'translateX(-50%)',
+              marginTop: 6, zIndex: 51, background: 'var(--panel)', border: '1px solid var(--border)',
+              borderRadius: 6, padding: 4, boxShadow: '0 8px 24px rgba(0,0,0,.45)',
+            }}
+          >
+            {[1, 2, 3, 4, 5, 6, 7].map((d) => {
+              const on = d === shipDay;
+              return (
+                <div
+                  key={d}
+                  onClick={() => { setShipDay(d); setOpen(false); }}
+                  className="mono"
+                  style={{
+                    padding: '6px 18px', cursor: 'pointer', textAlign: 'center', borderRadius: 4, whiteSpace: 'nowrap',
+                    background: on ? 'var(--panel2)' : 'transparent',
+                    color: on ? 'var(--accent)' : 'var(--txt)', fontWeight: on ? 700 : 400,
+                  }}
+                >
+                  {on ? '◉ ' : ''}{dayName(lang, d)}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const s = useApp((st) => st.s);
@@ -107,7 +160,7 @@ export default function App() {
                 {fmt(L.welcomeBack, { name: s.name || '...' })}
               </div>
               <div data-tut="clawd"><ClawdLogo foundMsg={p.ui.clawd} /></div>
-              <div className="mono c-dim" style={{ fontSize: 12 }}>{fmt(L.lifeDeploy, { day: dayName(s.lang, s.shipDay) })}</div>
+              <ShipDayLine />
               <div className="mono" style={{ fontSize: 12, marginTop: 4 }} data-tut="streak">
                 {fmt(L.streakWeeks, { n: s.streak })} · <span className="c-ship">● LIVE</span>
               </div>

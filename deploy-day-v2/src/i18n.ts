@@ -13,6 +13,7 @@ const ko = {
   // 배너 / 앱 셸
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: '인생 배포 · 매주 {day}',
+  shipDayTip: '배포 요일 변경',
   streakWeeks: 'streak {n}주',
   tipsHead: 'Tips for getting started',
   whatsNew: "What's new",
@@ -106,6 +107,7 @@ const en: typeof ko = {
   // banner / app shell
   welcomeBack: 'Welcome back {name}!',
   lifeDeploy: 'Life deployment · every {day}',
+  shipDayTip: 'change ship day',
   streakWeeks: 'streak {n}w',
   tipsHead: 'Tips for getting started',
   whatsNew: "What's new",
