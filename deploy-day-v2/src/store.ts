@@ -53,7 +53,7 @@ interface AppStore {
   // 백로그
   addBacklog: (text: string) => void;
   deleteBacklog: (id: string) => void;
-  pullBacklog: (id: string) => void;
+  pullBacklog: (id: string, project: string | null) => void; // 선택한 프로젝트로 스프린트에 올림
 
   // 프로젝트
   addProject: (name: string) => void;
@@ -171,13 +171,13 @@ export const useApp = create<AppStore>((set, get) => {
       const s = get().s;
       commit({ ...s, backlog: s.backlog.filter((b) => b.id !== id) });
     },
-    pullBacklog: (id) => {
+    pullBacklog: (id, project) => {
       const s = get().s;
       const it = s.backlog.find((b) => b.id === id);
       if (!it) return;
       commit({
         ...s,
-        todos: [...s.todos, { id: uid(), text: it.text, done: false, carried: false, project: it.project }],
+        todos: [...s.todos, { id: uid(), text: it.text, done: false, carried: false, project }],
         backlog: s.backlog.filter((b) => b.id !== id),
       });
     },
