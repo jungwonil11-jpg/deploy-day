@@ -55,6 +55,13 @@ export function SprintTab() {
   const downRef = useRef<Down | null>(null);
   const movedRef = useRef(false); // 드래그 직후 클릭 억제용
 
+  // 드래그 고스트 — 커서 따라다니는 반투명 미리보기 (re-render 없이 ref로 위치 갱신)
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const ptr = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const moveGhost = () => {
+    if (ghostRef.current) ghostRef.current.style.transform = `translate(${ptr.current.x + 14}px, ${ptr.current.y + 8}px) rotate(-1.5deg)`;
+  };
+
   /* ---------- FLIP 애니메이션 (reorder 시 미끄러지듯) ---------- */
   const elRefs = useRef<Map<string, HTMLElement>>(new Map());
   // 위치는 offsetTop/offsetLeft(순수 레이아웃 좌표)로 측정 — transform·스크롤 영향 없음.
@@ -107,10 +114,13 @@ export function SprintTab() {
   /* ---------- 공통 포인터 핸들러 (행/칩) ---------- */
   const onDown = (e: React.PointerEvent, c: Omit<Down, 'x' | 'y' | 'el' | 'pointerId'>) => {
     if (e.button !== 0) return;
+    ptr.current = { x: e.clientX, y: e.clientY };
     downRef.current = { x: e.clientX, y: e.clientY, el: e.currentTarget as HTMLElement, pointerId: e.pointerId, ...c };
     movedRef.current = false;
   };
   const onMove = (e: React.PointerEvent) => {
+    ptr.current = { x: e.clientX, y: e.clientY };
+    moveGhost(); // 드래그 중이면 고스트가 커서 따라옴
     if (drag?.kind === 'todo') { todoMove(e); return; }
     if (drag?.kind === 'project') { projMove(e); return; }
     const d = downRef.current;
@@ -181,7 +191,7 @@ export function SprintTab() {
         onPointerDown={(e) => onDown(e, { kind: 'todo', pid: t.project, done: t.done, ids: baseIds, id: t.id })}
         onPointerMove={onMove}
         onPointerUp={onUp}
-        style={{ cursor: 'grab', touchAction: 'none', ...(dragging ? { background: 'var(--panel2)', boxShadow: '0 4px 14px rgba(0,0,0,.4)', position: 'relative', zIndex: 3 } : null) }}
+        style={{ cursor: 'grab', touchAction: 'none', ...(dragging ? { opacity: 0.4 } : null) }}
       >
         {grip}
         <span
@@ -267,6 +277,9 @@ export function SprintTab() {
   const projLive = drag?.kind === 'project' ? drag.order : projIds;
   const projById = new Map(projects.map((pp) => [pp.id, pp]));
 
+  // 드래그 중인 커밋(고스트 표시용)
+  const dragTodo = drag?.kind === 'todo' ? s.todos.find((t) => t.id === drag.activeId) ?? null : null;
+
   return (
     <div>
       <div data-tut="project-chips" style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
@@ -341,6 +354,18 @@ export function SprintTab() {
       <div className={`shipbar mono ${ready ? 'ready' : 'wait'}`} data-tut="ship-bar" onClick={onShip}>
         {shipLabel}
       </div>
+
+      {/* 드래그 고스트 — 커서 따라다니는 반투명 미리보기 */}
+      {dragTodo && (
+        <div
+          ref={ghostRef}
+          className="drag-ghost"
+          style={{ transform: `translate(${ptr.current.x + 14}px, ${ptr.current.y + 8}px) rotate(-1.5deg)` }}
+        >
+          <PDot color={projColor(s, dragTodo.project)} />
+          <span className="kr">{dragTodo.text}</span>
+        </div>
+      )}
     </div>
   );
 }
