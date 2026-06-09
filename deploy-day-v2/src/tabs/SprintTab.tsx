@@ -55,11 +55,16 @@ export function SprintTab() {
   const downRef = useRef<Down | null>(null);
   const movedRef = useRef(false); // 드래그 직후 클릭 억제용
 
-  // 드래그 고스트 — 커서 따라다니는 반투명 미리보기 (re-render 없이 ref로 위치 갱신)
+  // 드래그 고스트 — 원본 행 크기·모양 그대로 반투명 복제가 커서를 따라옴.
+  // 잡은 지점(offX/offY)을 기준으로 추적해 "행을 그대로 들어올린" 느낌. ref로 위치만 갱신(re-render X).
   const ghostRef = useRef<HTMLDivElement>(null);
   const ptr = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const ghostGeo = useRef<{ w: number; offX: number; offY: number }>({ w: 0, offX: 0, offY: 0 });
   const moveGhost = () => {
-    if (ghostRef.current) ghostRef.current.style.transform = `translate(${ptr.current.x + 14}px, ${ptr.current.y + 8}px) rotate(-1.5deg)`;
+    if (ghostRef.current) {
+      const g = ghostGeo.current;
+      ghostRef.current.style.transform = `translate(${ptr.current.x - g.offX}px, ${ptr.current.y - g.offY}px)`;
+    }
   };
 
   /* ---------- FLIP 애니메이션 (reorder 시 미끄러지듯) ---------- */
@@ -128,8 +133,12 @@ export function SprintTab() {
     if (Math.hypot(e.clientX - d.x, e.clientY - d.y) < DRAG_THRESHOLD) return; // 아직 클릭일 수도
     movedRef.current = true;
     d.el.setPointerCapture(d.pointerId);
-    if (d.kind === 'todo') setDrag({ kind: 'todo', pid: d.pid ?? null, done: !!d.done, order: d.ids, activeId: d.id });
-    else setDrag({ kind: 'project', order: d.ids, activeId: d.id });
+    if (d.kind === 'todo') {
+      // 잡은 행의 크기·잡은 지점 기록 → 고스트가 같은 크기로 그 지점 기준 따라옴
+      const r = d.el.getBoundingClientRect();
+      ghostGeo.current = { w: r.width, offX: d.x - r.left, offY: d.y - r.top };
+      setDrag({ kind: 'todo', pid: d.pid ?? null, done: !!d.done, order: d.ids, activeId: d.id });
+    } else setDrag({ kind: 'project', order: d.ids, activeId: d.id });
   };
   const onUp = (e: React.PointerEvent) => {
     if (drag?.kind === 'todo') todoUp(e);
@@ -355,15 +364,21 @@ export function SprintTab() {
         {shipLabel}
       </div>
 
-      {/* 드래그 고스트 — 커서 따라다니는 반투명 미리보기 */}
+      {/* 드래그 고스트 — 원본 행 크기·모양 그대로 반투명 복제 */}
       {dragTodo && (
         <div
           ref={ghostRef}
-          className="drag-ghost"
-          style={{ transform: `translate(${ptr.current.x + 14}px, ${ptr.current.y + 8}px) rotate(-1.5deg)` }}
+          className="drag-ghost row"
+          style={{ width: ghostGeo.current.w, transform: `translate(${ptr.current.x - ghostGeo.current.offX}px, ${ptr.current.y - ghostGeo.current.offY}px)` }}
         >
+          {grip}
+          <span className="iconbtn mono" style={{ fontSize: 17, color: dragTodo.done ? 'var(--ship)' : 'var(--dimmer)' }}>{dragTodo.done ? '☒' : '☐'}</span>
           <PDot color={projColor(s, dragTodo.project)} />
-          <span className="kr">{dragTodo.text}</span>
+          <span className="grow kr" style={{ fontSize: 15, color: dragTodo.done ? 'var(--dim)' : 'var(--txt)', textDecoration: dragTodo.done ? 'line-through' : 'none' }}>{dragTodo.text}</span>
+          {dragTodo.carried && (
+            <span className="mono" style={{ fontSize: 10, color: 'var(--warn)', border: '1px solid var(--warn)', borderRadius: 4, padding: '1px 5px' }}>rollback</span>
+          )}
+          <span className="iconbtn">✕</span>
         </div>
       )}
     </div>
