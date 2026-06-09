@@ -28,7 +28,7 @@ function ShipDayLine() {
   const [open, setOpen] = useState(false);
   const [rect, setRect] = useState<DOMRect | null>(null);
   const ref = useRef<HTMLSpanElement>(null);
-  const [pre, post] = L.lifeDeploy.split('{day}');
+  const [pre, post] = L.lifeDeploy.replace('{app}', L.appName).split('{day}');
   const toggle = () => {
     if (!open && ref.current) setRect(ref.current.getBoundingClientRect());
     setOpen((o) => !o);
@@ -181,7 +181,7 @@ export default function App() {
               <div style={{ height: 12, borderBottom: '1px solid var(--accent)', marginBottom: 12 }} />
               <div className="mono c-accent" style={{ fontSize: 13, fontWeight: 700 }}>{L.whatsNew}</div>
               {recent.length === 0 ? (
-                <div className="kr c-dim" style={{ fontSize: 13, marginTop: 6 }}>{L.noReleaseYet}</div>
+                <div className="kr c-dim" style={{ fontSize: 13, marginTop: 6 }}>{p.noReleaseYet}</div>
               ) : (
                 recent.map((r, i) => (
                   <div key={i} className="kr" style={{ fontSize: 13, marginTop: 2 }}>

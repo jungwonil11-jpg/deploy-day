@@ -45,6 +45,7 @@ export interface Persona {
   emptyBacklog: string;
   emptyChangelog: string;
   emptyMemo: string;
+  noReleaseYet: string; // /changelog · What's new 빈 상태
   shipNotReady: string;
   shipDone: string;
   shipDialogSub: string;
@@ -78,6 +79,7 @@ const koPersonas: Persona[] = [
     emptyBacklog: '백로그가 비어 있어요\n다음에 하고 싶은 일을 미리 담아두세요',
     emptyChangelog: '아직 배포 기록이 없어요\n첫 {day}요일에 {ver}을 함께 찍어봐요',
     emptyMemo: '포스트잇이 없어요\n+ memo 로 바탕화면에 붙여보세요',
+    noReleaseYet: '아직 릴리즈가 없어요 — 첫 배포가 첫 소식이 될 거예요',
     shipNotReady: '배포는 {day}요일에 해요 🚀 오늘은 쌓는 날!',
     shipDone: '🚀 {ver} 배포 완료! 수고했어요',
     shipDialogSub: '완료한 일은 릴리즈노트에 남고, 못한 일은 다음 주로 넘어가요',
@@ -141,6 +143,7 @@ const koPersonas: Persona[] = [
     emptyBacklog: '백로그 비어있음\n다음 버전 아이디어 미리 던져놓기',
     emptyChangelog: '아직 배포 이력 없음\n첫 {day}요일에 {ver} 찍어보자',
     emptyMemo: '포스트잇 없음\n+ memo 로 바탕화면에 하나 붙여보셈',
+    noReleaseYet: '아직 릴리즈 없음 — 첫 배포가 첫 뉴스임',
     shipNotReady: '배포는 {day}요일에 🚀 (지금은 커밋 쌓는 날)',
     shipDone: '🚀 {ver} 배포 완료!',
     shipDialogSub: '완료한 건 릴리즈노트로 박제 · 못한 건 다음 스프린트로 롤백',
@@ -204,6 +207,7 @@ const koPersonas: Persona[] = [
     emptyBacklog: '백로그가 비어 있습니다\n다음 버전에 할 작업을 미리 등록해 두세요',
     emptyChangelog: '배포 이력이 없습니다\n첫 {day}요일에 {ver}을 기록해 보세요',
     emptyMemo: '포스트잇이 없습니다\n+ memo 로 바탕화면에 추가할 수 있습니다',
+    noReleaseYet: '아직 릴리즈가 없습니다 — 첫 배포가 첫 소식이 됩니다',
     shipNotReady: '배포는 {day}요일에 진행됩니다 🚀',
     shipDone: '🚀 {ver} 배포가 완료되었습니다',
     shipDialogSub: '완료 항목은 릴리즈노트에 기록되고, 미완료 항목은 다음 스프린트로 이월됩니다',
@@ -270,6 +274,7 @@ const enPersonas: Persona[] = [
     emptyBacklog: 'Your backlog is empty\nStash ideas for later here',
     emptyChangelog: "No releases yet\nLet's ship {ver} together this {day}",
     emptyMemo: 'No sticky notes\nAdd one to your desktop with + memo',
+    noReleaseYet: 'No releases yet — your first ship will be the first news!',
     shipNotReady: 'Shipping happens on {day} 🚀 Today is a stacking day!',
     shipDone: '🚀 {ver} shipped! Nice work',
     shipDialogSub: 'Done items go to the release notes, unfinished ones roll to next week',
@@ -333,6 +338,7 @@ const enPersonas: Persona[] = [
     emptyBacklog: "Backlog's empty\nToss in ideas for the next version.",
     emptyChangelog: "No ship history yet\nLet's cut {ver} this {day}.",
     emptyMemo: 'No sticky notes\nSlap one on your desktop with + memo.',
+    noReleaseYet: 'No releases yet — your first ship is the headline',
     shipNotReady: 'Shipping is on {day} 🚀 (today you just stack)',
     shipDone: '🚀 {ver} shipped!',
     shipDialogSub: 'Done stuff gets logged · the rest rolls to next sprint',
@@ -396,6 +402,7 @@ const enPersonas: Persona[] = [
     emptyBacklog: 'The backlog is empty\nRegister tasks for the next version in advance.',
     emptyChangelog: 'No ship history\nTry recording {ver} this {day}.',
     emptyMemo: 'No sticky notes\nYou can add one to your desktop with + memo.',
+    noReleaseYet: 'No releases yet — your first ship will be the first news.',
     shipNotReady: 'Shipping takes place on {day}. 🚀',
     shipDone: '🚀 {ver} has been shipped.',
     shipDialogSub: 'Completed items are recorded; unfinished items carry over to the next sprint',
