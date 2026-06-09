@@ -19,6 +19,9 @@ Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바�
 >
 > 설치 파일 용량은 **~3MB** — 모든 데이터는 기기에만 저장되고 네트워크 전송이 없습니다.
 
+> 🏪 **Microsoft Store 출시 준비 중** — Partner Center 등록·MSIX 검증 완료, 심사 제출 예정.
+> 스토어 출시 후에는 위 링크가 스토어 페이지로 바뀝니다(자동 업데이트·서명 적용).
+
 ---
 
 ## ⚠️ 현재 버전: v2 (Tauri) — [`deploy-day-v2/`](deploy-day-v2/)
@@ -86,7 +89,7 @@ npm run tauri build    # 릴리즈 (Windows setup.exe + MSI)
 
 - [x] v1 (Flutter) — 로컬 기능 + 데스크탑 상주 + 포스트잇 *(멀티윈도우 안정성 한계로 종료)*
 - [x] **v2 (Tauri)** — 기능 패리티 + 멀티윈도우 안정성 확보
-- [ ] MS Store(MSIX) / Google Play(AAB) 출시
+- [ ] **MS Store(MSIX) 출시** — Partner Center 등록·MSIX 검증 완료, 심사 제출 예정 / Google Play(AAB)는 이후 트랙
 - [ ] Firebase Auth(구글 로그인) + Firestore — **멀티기기 동기화** (최종 목표)
 
 ---
