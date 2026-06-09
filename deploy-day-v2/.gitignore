@@ -12,6 +12,12 @@ dist
 dist-ssr
 *.local
 
+# MSIX 패키징 (재생성 가능 — Package.appxmanifest 만 커밋)
+/msix-build/
+/dist-msix/
+/Assets/
+*.msix
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

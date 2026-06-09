@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MS Store(MSIX) 제출용 매니페스트. Identity 값은 Partner Center 의 deploy-day 앱과 일치해야 함.
+     Version 은 4자리(x.x.x.0), 제출 때마다 올려야 함. 에셋은 Tauri 가 생성한 src-tauri/icons/ 사용. -->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap uap10 rescap">
+
+  <Identity
+    Name="VictorWorld.deploy-day"
+    Publisher="CN=CF6591F8-F079-415A-8986-CDDB16AA7981"
+    Version="0.3.9.0"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>deploy-day</DisplayName>
+    <PublisherDisplayName>VictorWorld</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.18362.0" MaxVersionTested="10.0.26200.0" />
+  </Dependencies>
+
+  <Resources>
+    <Resource Language="ko-kr" />
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Applications>
+    <Application Id="deployDay"
+      Executable="deploy-day-v2.exe"
+      EntryPoint="Windows.FullTrustApplication"
+      uap10:TrustLevel="mediumIL"
+      uap10:RuntimeBehavior="packagedClassicApp">
+      <uap:VisualElements
+        DisplayName="deploy-day"
+        Description="인생을 소프트웨어처럼 배포하는 todo 앱 — 매주 ship. Ship your life like software."
+        BackgroundColor="#0C0C0C"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Square71x71Logo="Assets\Square71x71Logo.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>
