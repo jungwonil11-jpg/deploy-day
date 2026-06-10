@@ -7,20 +7,23 @@ Claude Code CLI 스타일의 터미널 감성 UI로 만든 데스크탑/모바�
 
 ## ⬇️ 다운로드 (Windows)
 
+### 🏪 [Microsoft Store에서 설치 (권장)](https://apps.microsoft.com/detail/9NFVKM751187)
+
+자동 업데이트 · 코드 서명 적용 · SmartScreen 경고 없음. 가장 간편한 설치 방법입니다.
+
+### 또는 GitHub 릴리즈에서 직접 받기
+
 **[→ 최신 릴리즈에서 받기](https://github.com/jungwonil11-jpg/deploy-day/releases/latest)**
 
 | 파일 | 설명 |
 |------|------|
-| `deploy-day_x.y.z_x64-setup.exe` | 설치 관리자 (권장) |
+| `deploy-day_x.y.z_x64-setup.exe` | 설치 관리자 |
 | `deploy-day_x.y.z_x64_en-US.msi` | MSI 패키지 |
 
-> ⚠️ 서명되지 않은 빌드라 설치 시 **SmartScreen / Smart App Control** 경고가 뜰 수 있습니다.
-> `추가 정보 → 실행`으로 진행하세요. (정식 서명은 MS Store 출시 시 적용 예정)
+> ⚠️ GitHub 릴리즈 빌드는 서명되지 않아 설치 시 **SmartScreen / Smart App Control** 경고가 뜰 수 있습니다.
+> `추가 정보 → 실행`으로 진행하세요. (서명·자동 업데이트가 필요하면 위 **Microsoft Store** 버전을 권장합니다.)
 >
 > 설치 파일 용량은 **~3MB** — 모든 데이터는 기기에만 저장되고 네트워크 전송이 없습니다.
-
-> 🏪 **Microsoft Store 심사 중** — 앱 제출(등록) 완료, 현재 심사(인증) 대기 중입니다.
-> 심사 통과 후 게시되면 위 다운로드 링크가 스토어 페이지로 바뀝니다(자동 업데이트·서명 적용).
 
 ---
 
@@ -89,7 +92,7 @@ npm run tauri build    # 릴리즈 (Windows setup.exe + MSI)
 
 - [x] v1 (Flutter) — 로컬 기능 + 데스크탑 상주 + 포스트잇 *(멀티윈도우 안정성 한계로 종료)*
 - [x] **v2 (Tauri)** — 기능 패리티 + 멀티윈도우 안정성 확보
-- [ ] **MS Store(MSIX) 출시** — 제출 완료, 심사(인증) 중 (통과 시 게시) / Google Play(AAB)는 이후 트랙
+- [x] **MS Store(MSIX) 출시** — [게시 완료](https://apps.microsoft.com/detail/9NFVKM751187) (2026-06-10) / Google Play(AAB)는 이후 트랙
 - [ ] Firebase Auth(구글 로그인) + Firestore — **멀티기기 동기화** (최종 목표)
 
 ---

@@ -26,7 +26,7 @@
 > - [x] **배포요일 드롭다운 / 이름변경 UI 디테일** (2026-06-09 완료) — 배너의 "매주 ○요일"
 >       클릭 시 요일 드롭다운(월~일, 기본 목)으로 배포 요일 변경 추가. 이름변경(배너 클릭)은
 >       이미 됨. v1 패리티 회복.
-> - [ ] MS Store 출시 — **제출 완료, 심사(인증) 중 (2026-06-10)**. 통과 시 게시. 상세: `deploy-day-v2/DESKTOP_RELEASE.md`
+> - [x] MS Store 출시 — **게시 완료 (2026-06-10)**. https://apps.microsoft.com/detail/9NFVKM751187 . 상세: `deploy-day-v2/DESKTOP_RELEASE.md`
 > - [ ] Firebase 멀티기기 동기화 (최종 목표, 별도 챕터)
 > - [ ] (선택) Android 빌드 (Tauri 2)
 > 커밋: A·B·스냅·config·이스터/페르소나/에러/드래그·튜토리얼·트레이·아이콘·v2통합·릴리즈.
@@ -82,10 +82,10 @@
 
 ---
 
-## ✅ MS Store 출시 — 제출 완료, 심사(인증) 중 (2026-06-10)
+## ✅ MS Store 출시 — 게시 완료 (2026-06-10)
 
-> v2(Tauri) 로컬 버전을 동기화 없이 그대로 제출. **제출까지 끝났고 현재 심사 대기 중.**
-> 심사 통과하면 스토어에 게시됨(보통 1~3일). 상세·재현 절차: `deploy-day-v2/DESKTOP_RELEASE.md`.
+> v2(Tauri) 로컬 버전을 동기화 없이 그대로 제출 → **심사 통과·스토어 게시 완료.**
+> 스토어 페이지: https://apps.microsoft.com/detail/9NFVKM751187 . 상세·재현 절차: `deploy-day-v2/DESKTOP_RELEASE.md`.
 > Tauri는 MSIX 기본 생성 X → Microsoft winapp CLI로 패키징, 스토어가 무료 서명.
 > (MS Store 흐름은 bibleSsul 경험 재활용.)
 
@@ -94,10 +94,10 @@
 - [x] 스토어 등록정보 — 스크린샷·설명·카테고리(생산성)·연령등급(IARC 전체이용가)
 - [x] 개인정보처리방침 URL — GitHub Pages 라이브 ("수집 0·네트워크 0"이라 심사 유리)
 - [x] 제출
-- [ ] **심사 통과 → 게시** (대기 중)
-- [ ] 게시 후: README·GitHub 릴리즈 다운로드 링크를 스토어 페이지로 교체
+- [x] **심사 통과 → 게시** (2026-06-10 게시 완료)
+- [x] 게시 후: README·GitHub 릴리즈 다운로드 안내를 스토어 우선으로 교체 (2026-06-10)
 
-> 그 전까지 배포 채널 = GitHub Releases의 setup.exe/msi (현재 v0.3.9).
+> 배포 채널 = **MS Store(권장, 서명·자동업데이트) + GitHub Releases의 setup.exe/msi (현재 v0.3.9, 미서명)**.
 
 ---
 
